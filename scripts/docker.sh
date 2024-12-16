@@ -29,24 +29,17 @@ case "$1" in
         )
 
         # Define package directories to mount
+        # v2 TODO: This is a temporary list of packages to mount. We need to find a way to automate this.
         PACKAGES=(
             "adapter-postgres"
             "adapter-sqlite"
-            "adapter-sqljs"
             "adapter-supabase"
-            "client-auto"
-            "client-direct"
             "client-discord"
-            "client-farcaster"
-            "client-telegram"
             "client-twitter"
             "core"
             "plugin-bootstrap"
             "plugin-image-generation"
             "plugin-node"
-            "plugin-solana"
-            "plugin-evm"
-            "plugin-tee"
         )
 
         # Start building the docker run command

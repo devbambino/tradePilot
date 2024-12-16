@@ -1,11 +1,6 @@
-import {
-    Connection,
-    PublicKey,
-    VersionedTransaction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { v4 as uuidv4 } from "uuid";
-import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
 import {
     ActionExample,
     HandlerCallback,
@@ -15,7 +10,7 @@ import {
     State,
     type Action,
     composeContext,
-    generateObjectDEPRECATED,
+    generateObjectDeprecated,
     settings,
 } from "@ai16z/eliza";
 import { TokenProvider } from "../providers/token.ts";
@@ -206,7 +201,7 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDEPRECATED({
+        const response = await generateObjectDeprecated({
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
@@ -363,81 +358,6 @@ export const executeSwap: Action = {
             if (confirmation.value.err) {
                 throw new Error(
                     `Transaction failed: ${confirmation.value.err}`
-                );
-            }
-
-            if (type === "buy") {
-                const tokenProvider = new TokenProvider(
-                    response.outputTokenCA,
-                    provider,
-                    runtime.cacheManager
-                );
-                const module = await import("better-sqlite3");
-                const Database = module.default;
-                const trustScoreDb = new TrustScoreDatabase(
-                    new Database(":memory:")
-                );
-                // add or get recommender
-                const uuid = uuidv4();
-                const recommender = await trustScoreDb.getOrCreateRecommender({
-                    id: uuid,
-                    address: walletPublicKey.toString(),
-                    solanaPubkey: walletPublicKey.toString(),
-                });
-
-                const trustScoreDatabase = new TrustScoreManager(
-                    runtime,
-                    tokenProvider,
-                    trustScoreDb
-                );
-                // save the trade
-                const tradeData = {
-                    buy_amount: response.amount,
-                    is_simulation: false,
-                };
-                await trustScoreDatabase.createTradePerformance(
-                    runtime,
-                    response.outputTokenCA,
-                    recommender.id,
-                    tradeData
-                );
-            } else if (type === "sell") {
-                const tokenProvider = new TokenProvider(
-                    response.inputTokenCA,
-                    provider,
-                    runtime.cacheManager
-                );
-                const module = await import("better-sqlite3");
-                const Database = module.default;
-                const trustScoreDb = new TrustScoreDatabase(
-                    new Database(":memory:")
-                );
-                // add or get recommender
-                const uuid = uuidv4();
-                const recommender = await trustScoreDb.getOrCreateRecommender({
-                    id: uuid,
-                    address: walletPublicKey.toString(),
-                    solanaPubkey: walletPublicKey.toString(),
-                });
-
-                const trustScoreDatabase = new TrustScoreManager(
-                    runtime,
-                    tokenProvider,
-                    trustScoreDb
-                );
-                // save the trade
-                const sellDetails = {
-                    sell_amount: response.amount,
-                    sell_recommender_id: recommender.id,
-                };
-                const sellTimeStamp = new Date().getTime().toString();
-                await trustScoreDatabase.updateSellDetails(
-                    runtime,
-                    response.inputTokenCA,
-                    recommender.id,
-                    sellTimeStamp,
-                    sellDetails,
-                    false
                 );
             }
 
