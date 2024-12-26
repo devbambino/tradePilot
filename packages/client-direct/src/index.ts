@@ -2,21 +2,23 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
 import multer, { File } from "multer";
-import { elizaLogger, generateCaption, generateImage } from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
-import { generateMessageResponse } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
-import { AgentRuntime } from "@elizaos/core";
 import {
     Content,
     Memory,
     ModelClass,
     Client,
+    stringToUuid,
+    AgentRuntime,
+    settings,
     IAgentRuntime,
-} from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-import { settings } from "@elizaos/core";
-import { createApiRouter } from "./api.ts";
+    elizaLogger, 
+    generateCaption, 
+    generateImage,
+    messageCompletionFooter,
+    composeContext,
+    generateMessageResponse,
+} from "@elizaos/eliza";
+import { createAgentApiRouter } from "./agent.api.ts";
 import * as fs from "fs";
 import * as path from "path";
 const upload = multer({ storage: multer.memoryStorage() });
@@ -66,7 +68,7 @@ export class DirectClient {
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
 
-        const apiRouter = createApiRouter(this.agents, this);
+        const apiRouter = createAgentApiRouter(this.agents, this);
         this.app.use(apiRouter);
 
         // Define an interface that extends the Express Request interface
