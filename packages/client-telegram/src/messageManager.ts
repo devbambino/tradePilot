@@ -3,21 +3,25 @@ import { Context, Telegraf } from "telegraf";
 import { composeContext, elizaLogger, ServiceType, composeRandomUser } from "@elizaos/core";
 import { getEmbeddingZeroVector } from "@elizaos/core";
 import {
+    composeContext,
+    ServiceType,
     Content,
     HandlerCallback,
     IAgentRuntime,
+    getEmbeddingZeroVector,
     IImageDescriptionService,
     Memory,
     ModelClass,
     State,
     UUID,
     Media,
+    elizaLogger,
+    stringToUuid,
+    generateMessageResponse,
+    generateShouldRespond,
+    messageCompletionFooter,
+    shouldRespondFooter,
 } from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-
-import { generateMessageResponse, generateShouldRespond } from "@elizaos/core";
-import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/core";
-
 import { cosineSimilarity } from "./utils";
 import {
     MESSAGE_CONSTANTS,
@@ -135,10 +139,11 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 {{recentMessages}}
 
-# Task: Generate a post/reply in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}) while using the thread of tweets as additional context:
+# Task: Generate a reply in the voice and style of {{agentName}}, aka @{{twitterUserName}}
+Write a very short reply that is from the perspective of {{agentName}}. Try to write something totally different than previous posts. Do not add commentary or acknowledge this request, just write the reply. Use the thread of tweets as additional context:
 Current Post:
 {{currentPost}}
-Thread of Tweets You Are Replying To:
+Thread of messages you are replying to:
 
 {{formattedConversation}}
 ` + messageCompletionFooter;
@@ -681,6 +686,7 @@ export class MessageManager {
         content: Content,
         replyToMessageId?: number
     ): Promise<Message.TextMessage[]> {
+
         if (content.attachments && content.attachments.length > 0) {
             content.attachments.map(async (attachment: Media) => {
                 if (attachment.contentType.startsWith("image")) {

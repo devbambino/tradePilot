@@ -955,8 +955,10 @@ export const generateImage = async (
     data?: string[];
     error?: any;
 }> => {
-    const model = getModel(runtime.imageModelProvider, ModelClass.IMAGE);
-    const modelSettings = models[runtime.imageModelProvider].imageSettings;
+    const imageModelProvider =
+        runtime.character.imageModelProvider ?? runtime.character.modelProvider;
+    const model = getModel(imageModelProvider, ModelClass.IMAGE);
+    const modelSettings = models[imageModelProvider].imageSettings;
 
     elizaLogger.info("Generating image with options:", {
         imageModelProvider: model,
@@ -1032,7 +1034,7 @@ export const generateImage = async (
         ) {
             const together = new Together({ apiKey: apiKey as string });
             const response = await together.images.create({
-                model: "black-forest-labs/FLUX.1-schnell",
+                model: runtime.getSetting("TOGETHER_IMAGE_MODEL") ?? "black-forest-labs/FLUX.1-schnell",
                 prompt: data.prompt,
                 width: data.width,
                 height: data.height,
@@ -1051,7 +1053,6 @@ export const generateImage = async (
                 throw new Error("Invalid response format from Together AI");
             }
 
-            // Rest of the code remains the same...
             const base64s = await Promise.all(
                 togetherResponse.data.map(async (image) => {
                     if (!image.url) {

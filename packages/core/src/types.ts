@@ -649,11 +649,13 @@ export type Character = {
 
     /** Optional system prompt */
     system?: string;
+    /** Optional image generation prompt */
+    imageGenerationPrompt?: string;
 
     /** Model provider to use */
     modelProvider: ModelProviderName;
 
-    /** Image model provider to use, if different from modelProvider */
+    /** Optional image model provider to use, if different from modelProvider */
     imageModelProvider?: ModelProviderName;
 
     /** Optional model endpoint override */
@@ -666,6 +668,7 @@ export type Character = {
         messageHandlerTemplate?: string;
         shouldRespondTemplate?: string;
         continueMessageHandlerTemplate?: string;
+        imagePromptTemplate? :string;
         evaluationTemplate?: string;
         twitterSearchTemplate?: string;
         twitterActionTemplate?: string;
