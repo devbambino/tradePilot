@@ -1,5 +1,7 @@
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
 import {
+    IAgentRuntime,
+    Memory,
+    State,
     composeContext,
     generateObjectDeprecated,
     ModelClass,
@@ -10,7 +12,7 @@ import {
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-
+import { zeroAddress } from "viem";
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { bridgeTemplate } from "../templates";
 import type { BridgeParams, Transaction } from "../types";
@@ -59,8 +61,9 @@ export class BridgeAction {
             fromChainId: this.walletProvider.getChainConfigs(params.fromChain)
                 .id,
             toChainId: this.walletProvider.getChainConfigs(params.toChain).id,
-            fromTokenAddress: params.fromToken,
-            toTokenAddress: params.toToken,
+            // if user wants to bridge native token, setting fromToken to zero address
+            fromTokenAddress: params.fromToken ? params.fromToken : zeroAddress,
+            toTokenAddress: params.toToken ? params.toToken : zeroAddress,
             fromAmount: parseEther(params.amount).toString(),
             fromAddress: fromAddress,
             toAddress: params.toAddress || fromAddress,
@@ -100,15 +103,24 @@ export const bridgeAction = {
         const walletProvider = initWalletProvider(runtime);
         const action = new BridgeAction(walletProvider);
 
+        // Get all chains from walletProvider
+        const chains = Object.keys(walletProvider.chains);
+
         // Compose bridge context
         const bridgeContext = composeContext({
             state,
             template: bridgeTemplate,
         });
+        const contextWithChains = bridgeContext.replace(
+            "SUPPORTED_CHAINS",
+            chains.map((item) => `"${item}"`).join("|")
+        );
+
+        // Generate bridge details object
         const content = await generateObjectDeprecated({
             runtime,
-            context: bridgeContext,
-            modelClass: ModelClass.LARGE,
+            context: contextWithChains,
+            modelClass: ModelClass.SMALL,
         });
 
         const bridgeOptions: BridgeParams = {

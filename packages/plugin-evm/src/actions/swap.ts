@@ -1,5 +1,7 @@
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
 import {
+    IAgentRuntime,
+    Memory,
+    State,
     composeContext,
     generateObjectDeprecated,
     ModelClass,
@@ -10,7 +12,6 @@ import {
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { swapTemplate } from "../templates";
 import type { SwapParams, Transaction } from "../types";
@@ -107,29 +108,36 @@ export const swapAction = {
         callback?: any
     ) => {
         console.log("Swap action handler called");
-        const walletProvider = initWalletProvider(runtime);
-        const action = new SwapAction(walletProvider);
-
-        // Compose swap context
-        const swapContext = composeContext({
-            state,
-            template: swapTemplate,
-        });
-        const content = await generateObjectDeprecated({
-            runtime,
-            context: swapContext,
-            modelClass: ModelClass.LARGE,
-        });
-
-        const swapOptions: SwapParams = {
-            chain: content.chain,
-            fromToken: content.inputToken,
-            toToken: content.outputToken,
-            amount: content.amount,
-            slippage: content.slippage,
-        };
 
         try {
+            const walletProvider = initWalletProvider(runtime);
+
+            const chains = Object.keys(walletProvider.chains);
+            const context = composeContext({
+                state,
+                template: swapTemplate,
+            });
+            const contextWithChains = context.replace(
+                "SUPPORTED_CHAINS",
+                chains.map((item) => `"${item}"`).join("|")
+            );
+
+            // Generate swap details object
+            const content = (await generateObjectDeprecated({
+                runtime,
+                context: contextWithChains,
+                modelClass: ModelClass.SMALL,
+            })) as SwapParams;
+
+            const swapOptions: SwapParams = {
+                chain: content.chain,
+                fromToken: content.fromToken,
+                toToken: content.toToken,
+                amount: content.amount,
+                slippage: content.slippage,
+            };
+
+            const action = new SwapAction(walletProvider);
             const swapResp = await action.swap(swapOptions);
             if (callback) {
                 callback({
