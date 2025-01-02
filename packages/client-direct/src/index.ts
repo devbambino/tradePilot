@@ -1,30 +1,32 @@
-import bodyParser from "body-parser";
-import cors from "cors";
-import express, { Request as ExpressRequest } from "express";
-import multer from "multer";
 import {
+    AgentRuntime,
+    Client,
+    composeContext,
+    Content,
     elizaLogger,
     generateCaption,
     generateImage,
-    Media,
-    getEmbeddingZeroVector
-} from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
-import { generateMessageResponse } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
-import { AgentRuntime } from "@elizaos/core";
-import {
-    Content,
-    Memory,
-    ModelClass,
-    Client,
+    generateMessageResponse,
+    getEmbeddingZeroVector,
     IAgentRuntime,
+    Media,
+    Memory,
+    messageCompletionFooter,
+    ModelClass,
+    settings,
+    stringToUuid,
 } from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-import { settings } from "@elizaos/core";
-import { createApiRouter } from "./api.ts";
+import bodyParser from "body-parser";
+import cors from "cors";
+import express, { Request as ExpressRequest } from "express";
+import ExpressWs from "express-ws";
 import * as fs from "fs";
+import multer from "multer";
 import * as path from "path";
+import VoiceResponse from "twilio/lib/twiml/VoiceResponse";
+import { type WebSocket } from "ws";
+import { createApiRouter } from "./api.ts";
+import { handleCallConnection } from "./twillio-handler.ts";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -447,7 +449,9 @@ export class DirectClient {
 
         this.app.post("/:agentId/speak", async (req, res) => {
             const agentId = req.params.agentId;
-            const roomId = stringToUuid(req.body.roomId ?? "default-room-" + agentId);
+            const roomId = stringToUuid(
+                req.body.roomId ?? "default-room-" + agentId
+            );
             const userId = stringToUuid(req.body.userId ?? "user");
             const text = req.body.text;
 
@@ -461,7 +465,8 @@ export class DirectClient {
             // if runtime is null, look for runtime with the same name
             if (!runtime) {
                 runtime = Array.from(this.agents.values()).find(
-                    (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+                    (a) =>
+                        a.character.name.toLowerCase() === agentId.toLowerCase()
                 );
             }
 
@@ -532,7 +537,9 @@ export class DirectClient {
                 await runtime.messageManager.createMemory(responseMessage);
 
                 if (!response) {
-                    res.status(500).send("No response from generateMessageResponse");
+                    res.status(500).send(
+                        "No response from generateMessageResponse"
+                    );
                     return;
                 }
 
@@ -566,38 +573,83 @@ export class DirectClient {
                     },
                     body: JSON.stringify({
                         text: textToSpeak,
-                        model_id: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
+                        model_id:
+                            process.env.ELEVENLABS_MODEL_ID ||
+                            "eleven_multilingual_v2",
                         voice_settings: {
-                            stability: parseFloat(process.env.ELEVENLABS_VOICE_STABILITY || "0.5"),
-                            similarity_boost: parseFloat(process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST || "0.9"),
-                            style: parseFloat(process.env.ELEVENLABS_VOICE_STYLE || "0.66"),
-                            use_speaker_boost: process.env.ELEVENLABS_VOICE_USE_SPEAKER_BOOST === "true",
+                            stability: parseFloat(
+                                process.env.ELEVENLABS_VOICE_STABILITY || "0.5"
+                            ),
+                            similarity_boost: parseFloat(
+                                process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST ||
+                                    "0.9"
+                            ),
+                            style: parseFloat(
+                                process.env.ELEVENLABS_VOICE_STYLE || "0.66"
+                            ),
+                            use_speaker_boost:
+                                process.env
+                                    .ELEVENLABS_VOICE_USE_SPEAKER_BOOST ===
+                                "true",
                         },
                     }),
                 });
 
                 if (!speechResponse.ok) {
-                    throw new Error(`ElevenLabs API error: ${speechResponse.statusText}`);
+                    throw new Error(
+                        `ElevenLabs API error: ${speechResponse.statusText}`
+                    );
                 }
 
                 const audioBuffer = await speechResponse.arrayBuffer();
 
                 // Set appropriate headers for audio streaming
                 res.set({
-                    'Content-Type': 'audio/mpeg',
-                    'Transfer-Encoding': 'chunked'
+                    "Content-Type": "audio/mpeg",
+                    "Transfer-Encoding": "chunked",
                 });
 
                 res.send(Buffer.from(audioBuffer));
-
             } catch (error) {
-                console.error("Error processing message or generating speech:", error);
+                console.error(
+                    "Error processing message or generating speech:",
+                    error
+                );
                 res.status(500).json({
                     error: "Error processing message or generating speech",
-                    details: error.message
+                    details: error.message,
                 });
             }
         });
+
+        this.app.post("/:agentId/twillio/call/incoming", (req, res) => {
+            const agentId = req.params.agentId;
+
+            const twiml = new VoiceResponse();
+            twiml.connect().stream({
+                url: `wss://${process.env.SERVER_DOMAIN}/${agentId}/twillio/call/connection`,
+            });
+            res.writeHead(200, { "Content-Type": "text/xml" });
+            res.end(twiml.toString());
+        });
+
+        ExpressWs(this.app).ws(
+            "/:agentId/twillio/call/connection",
+            (ws: WebSocket, req: express.Request) => {
+                const agentId = req.params.agentId;
+                const runtime = this.agents.get(agentId);
+
+                const userId = stringToUuid("phone-user");
+                const roomId = stringToUuid(`phone-room-${Date.now()}`);
+
+                if (!runtime) {
+                    ws.close();
+                    return;
+                }
+
+                handleCallConnection(ws, runtime, userId, roomId);
+            }
+        );
     }
 
     // agent/src/index.ts:startAgent calls this
