@@ -81,7 +81,7 @@ export async function generateText({
     const endpoint =
         runtime.character.modelEndpointOverride || models[provider].endpoint;
     let model = models[provider].model[modelClass];
-
+    context = trimTokens(context, 8192, model as TiktokenModel);
     // allow character.json settings => secrets to override models
     // FIXME: add MODEL_MEDIUM support
     switch (provider) {
@@ -160,9 +160,7 @@ export async function generateText({
     const presence_penalty =
         modelConfiguration?.presence_penalty ||
         models[provider].settings.presence_penalty;
-    const max_context_length =
-        modelConfiguration?.maxInputTokens ||
-        models[provider].settings.maxInputTokens;
+    const max_context_length = 8192;
     const max_response_length =
         modelConfiguration?.max_response_length ||
         models[provider].settings.maxOutputTokens;
@@ -176,7 +174,7 @@ export async function generateText({
         elizaLogger.debug(
             `Trimming context to max length of ${max_context_length} tokens.`
         );
-        context = await trimTokens(context, max_context_length, "gpt-4o");
+        context = trimTokens(context, max_context_length, model as TiktokenModel);
 
         let response: string;
 

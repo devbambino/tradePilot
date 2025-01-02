@@ -221,7 +221,7 @@ const openAISettings = {
   model: {
     [ModelClass.SMALL]: "gpt-4o-mini",
     [ModelClass.MEDIUM]: "gpt-4o",
-    [ModelClass.LARGE]: "gpt-4o",
+    [ModelClass.LARGE]: "o1-2024-12-17",
     [ModelClass.EMBEDDING]: "text-embedding-3-small",
     [ModelClass.IMAGE]: "dall-e-3",
   },
