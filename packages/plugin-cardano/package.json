@@ -1,0 +1,24 @@
+{
+  "name": "@elizaos/plugin-cardano",
+  "version": "0.1.7-alpha.2",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@elizaos/core": "workspace:*",
+    "@elizaos/plugin-trustdb": "workspace:*",
+    "@meshsdk/core": "^1.8.8",
+    "bignumber": "1.1.0",
+    "bignumber.js": "9.1.2",
+    "node-cache": "5.1.2",
+    "tsup": "8.3.5"
+  },
+  "scripts": {
+    "build": "tsup --format esm --dts",
+    "dev": "tsup --format esm --dts --watch",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "whatwg-url": "7.1.0"
+  }
+}

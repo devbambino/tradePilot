@@ -61,6 +61,7 @@ import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
+import { cardanoPlugin } from "@elizaos/plugin-cardano";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -599,6 +600,9 @@ export async function createAgent(
             getSecret(character, "FUEL_PRIVATE_KEY") ? fuelPlugin : null,
             getSecret(character, "AVALANCHE_PRIVATE_KEY")
                 ? avalanchePlugin
+                : null,
+            getSecret(character, "CARDANO_PRIVATE_KEY")
+                ? cardanoPlugin
                 : null,
         ].filter(Boolean),
         providers: [],

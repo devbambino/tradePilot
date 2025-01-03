@@ -1,0 +1,206 @@
+import {
+    elizaLogger,
+    composeContext,
+    Content,
+    HandlerCallback,
+    ModelClass,
+    generateObject,
+    ActionExample,
+    Action,
+    type IAgentRuntime,
+    type Memory,
+    type State,
+} from "@elizaos/core";
+import { z } from "zod";
+
+import {
+    initWalletProvider,
+    WalletProvider,
+    nativeWalletProvider,
+} from "../providers/wallet";
+
+import { generateObjectDeprecated } from "@elizaos/core";
+
+
+export interface TransferContent extends Content {
+    recipient: string;
+    amount: string | number;
+}
+
+function isTransferContent(content: Content): content is TransferContent {
+    console.log("Content for transfer", content);
+    return (
+        typeof content.recipient === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
+    );
+}
+
+const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
+
+Example response:
+\`\`\`json
+{
+    "recipient": "addr_test1qq2234h0kv3rmeq0aze7t0n588l87r4erkfnux2zgm4aa8s2vj6ht7wkjr37r57y2ygjgdlyx2kf7n0ytwt9al2qw28sep0k7y",
+    "amount": "1"
+}
+\`\`\`
+
+{{recentMessages}}
+
+Given the recent messages, extract the following information about the requested token transfer:
+- Recipient wallet address
+- Amount to transfer
+
+Respond with a JSON markdown block containing only the extracted values.`;
+
+export class TransferAction {
+    constructor(private walletProvider: WalletProvider) { }
+
+    async transfer(params: TransferContent): Promise<string> {
+        console.log(
+            `Transferring: ${params.amount} ada tokens to (${params.recipient})`
+        );
+        try {
+            const walletClient = await this.walletProvider.sendAda(params.recipient, params.amount);
+            return walletClient;
+        } catch (error) {
+            throw new Error(`Transfer failed: ${error.message}`);
+        }
+    }
+}
+
+const buildTransferDetails = async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State
+): Promise<TransferContent> => {
+    const walletInfo = await nativeWalletProvider.get(runtime, message, state);
+    state.walletInfo = walletInfo;
+
+    // Initialize or update state
+    if (!state) {
+        state = (await runtime.composeState(message)) as State;
+    } else {
+        state = await runtime.updateRecentMessageState(state);
+    }
+
+    // Define the schema for the expected output
+    // const transferSchema = z.object({
+    //     recipient: z.string(),
+    //     amount: z.union([z.string(), z.number()]),
+    // });
+
+    // Compose transfer context
+    const transferContext = composeContext({
+        state,
+        template: transferTemplate,
+    });
+
+    // Generate transfer content with the schema
+    // const content = await generateObjectDeprecated({
+    //     runtime,
+    //     context: transferContext,
+    //     schema: transferSchema,
+    //     modelClass: ModelClass.SMALL,
+    // });
+    const content = await generateObjectDeprecated({
+        runtime,
+        context: transferContext,
+        modelClass: ModelClass.SMALL,
+    });
+
+    // const transferContent = content.object as TransferContent;
+
+    return content;
+};
+
+export default {
+    name: "SEND_TOKEN",
+    similes: ["SEND_TOKENS", "TOKEN_TRANSFER", "TRANSFER_TOKEN", "TRANSFER_TOKENS", "SEND_ADA"],
+    description: "Transfer tokens from the agent's wallet to another",
+    handler: async (
+        runtime: IAgentRuntime,
+        message: Memory,
+        state: State,
+        options: any,
+        callback?: HandlerCallback
+    ) => {
+        elizaLogger.log("Starting SEND_TOKEN handler...");
+
+        const transferDetails = await buildTransferDetails(
+            runtime,
+            message,
+            state
+        );
+
+        // Validate transfer content
+        if (!isTransferContent(transferDetails)) {
+            console.error("Invalid content for TRANSFER_TOKEN action.");
+            if (callback) {
+                callback({
+                    text: "Unable to process transfer request. Invalid content provided.",
+                    content: { error: "Invalid transfer content" },
+                });
+            }
+            return false;
+        }
+
+        try {
+            const walletProvider = await initWalletProvider(runtime);
+            const action = new TransferAction(walletProvider);
+            const hash = await action.transfer(transferDetails);
+
+            if (callback) {
+                callback({
+                    text: `Successfully transferred ${transferDetails.amount} ADA to ${transferDetails.recipient}, Transaction: ${hash}`,
+                    content: {
+                        success: true,
+                        hash: hash,
+                        amount: transferDetails.amount,
+                        recipient: transferDetails.recipient,
+                    },
+                });
+            }
+
+            return true;
+        } catch (error) {
+            console.error("Error during token transfer:", error);
+            if (callback) {
+                callback({
+                    text: `Error transferring tokens: ${error.message}`,
+                    content: { error: error.message },
+                });
+            }
+            return false;
+        }
+    },
+    template: transferTemplate,
+    validate: async (runtime: IAgentRuntime) => {
+        //console.log("Validating ADA transfer from user:", message.userId);
+        return true;
+    },
+    examples: [
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "Send 1 ADA tokens to addr_test1qq2234h0kv3rmeq0aze7t0n588l87r4erkfnux2zgm4aa8s2vj6ht7wkjr37r57y2ygjgdlyx2kf7n0ytwt9al2qw28sep0k7y",
+                },
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "I'll send 1 ADA tokens now...",
+                    action: "SEND_TOKEN",
+                },
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "Successfully sent 1 ADA tokens to addr_test1qq2234h0kv3rmeq0aze7t0n588l87r4erkfnux2zgm4aa8s2vj6ht7wkjr37r57y2ygjgdlyx2kf7n0ytwt9al2qw28sep0k7y, Transaction: a26e4adfe3dc57b5fa8fea515cdcba1315ee8c8fe25d5864419bf2a1378b3d91",
+                },
+            },
+        ],
+    ] as ActionExample[][],
+} as Action;
