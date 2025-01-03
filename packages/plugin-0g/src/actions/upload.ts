@@ -5,7 +5,6 @@ import {
     Memory,
     State,
     ModelClass,
-    Content,
     ActionExample,
     generateObject,
 } from "@elizaos/core";
@@ -15,18 +14,7 @@ import { composeContext } from "@elizaos/core";
 import { promises as fs } from "fs";
 
 import { uploadTemplate } from "../templates/upload";
-
-export interface UploadContent extends Content {
-    filePath: string;
-}
-
-function isUploadContent(
-    _runtime: IAgentRuntime,
-    content: any
-): content is UploadContent {
-    console.log("Content for upload", content);
-    return typeof content.filePath === "string";
-}
+import { isUploadContent, UploadSchema, UploadContent } from "../types";
 
 export const zgUpload: Action = {
     name: "ZG_UPLOAD",
@@ -72,10 +60,11 @@ export const zgUpload: Action = {
             runtime,
             context: uploadContext,
             modelClass: ModelClass.LARGE,
+            schema: UploadSchema,
         });
 
         // Validate upload content
-        if (!isUploadContent(runtime, content)) {
+        if (!isUploadContent(content.object)) {
             console.error("Invalid content for UPLOAD action.");
             if (callback) {
                 callback({
@@ -91,7 +80,7 @@ export const zgUpload: Action = {
             const zgEvmRpc = runtime.getSetting("ZEROG_EVM_RPC");
             const zgPrivateKey = runtime.getSetting("ZEROG_PRIVATE_KEY");
             const flowAddr = runtime.getSetting("ZEROG_FLOW_ADDRESS");
-            const filePath = content.filePath;
+            const { filePath } = content.object as UploadContent;
             if (!filePath) {
                 console.error("File path is required");
                 return false;

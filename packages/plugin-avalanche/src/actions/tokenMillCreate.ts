@@ -9,25 +9,14 @@ import {
     composeContext,
     generateObject,
     ModelClass,
-    Content,
 } from "@elizaos/core";
 import { validateAvalancheConfig } from "../environment";
 import { createMarketAndToken } from "../utils/tokenMill";
-
-export interface TokenMillCreateContent extends Content {
-    name: string;
-    symbol: string;
-}
-
-function isTokenMillCreateContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is TokenMillCreateContent {
-    elizaLogger.debug("Content for create", content);
-    return (
-        typeof content.name === "string" && typeof content.symbol === "string"
-    );
-}
+import {
+    TokenMillCreateContentSchema,
+    TokenMillCreateContent,
+    isTokenMillCreateContent,
+} from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values.
 
@@ -92,12 +81,13 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TokenMillCreateContentSchema,
         });
 
         elizaLogger.debug("Create content:", content);
 
         // Validate transfer content
-        if (!isTokenMillCreateContent(runtime, content)) {
+        if (!isTokenMillCreateContent(content.object)) {
             elizaLogger.error("Invalid content for CREATE_TOKEN action.");
             callback?.({
                 text: "Unable to process transfer request. Invalid content provided.",
@@ -106,13 +96,14 @@ export default {
             return false;
         }
 
+        const { name, symbol } = content.object as TokenMillCreateContent;
         const { tx, baseToken, market } = await createMarketAndToken(
             runtime,
-            content.name,
-            content.symbol
+            name,
+            symbol
         );
         callback?.({
-            text: `Created token ${content.name} with symbol ${content.symbol}. CA: ${baseToken}`,
+            text: `Created token ${name} with symbol ${symbol}. CA: ${baseToken}`,
             content: { tx, baseToken, market },
         });
         return true;

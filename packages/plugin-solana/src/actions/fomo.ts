@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { generateImage } from "@elizaos/core";
 import {
     Connection,
@@ -11,7 +12,6 @@ import bs58 from "bs58";
 import {
     settings,
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -24,13 +24,13 @@ import {
 
 import { walletProvider } from "../providers/wallet.ts";
 
-interface CreateTokenMetadata {
+export interface CreateTokenMetadata {
     name: string;
     symbol: string;
     uri: string;
 }
 
-export interface CreateAndBuyContent extends Content {
+export interface CreateAndBuyContent {
     tokenMetadata: {
         name: string;
         symbol: string;
@@ -41,22 +41,22 @@ export interface CreateAndBuyContent extends Content {
     requiredLiquidity: string | number;
 }
 
-export function isCreateAndBuyContentForFomo(
-    content: any
-): content is CreateAndBuyContent {
-    console.log("Content for create & buy", content);
-    return (
-        typeof content.tokenMetadata === "object" &&
-        content.tokenMetadata !== null &&
-        typeof content.tokenMetadata.name === "string" &&
-        typeof content.tokenMetadata.symbol === "string" &&
-        typeof content.tokenMetadata.description === "string" &&
-        typeof content.tokenMetadata.image_description === "string" &&
-        (typeof content.buyAmountSol === "string" ||
-            typeof content.buyAmountSol === "number") &&
-        typeof content.requiredLiquidity === "number"
-    );
-}
+export const CreateAndBuyContentSchema = z.object({
+    tokenMetadata: z.object({
+        name: z.string(),
+        symbol: z.string(),
+        description: z.string(),
+        image_description: z.string(),
+    }),
+    buyAmountSol: z.union([z.string(), z.number()]),
+    requiredLiquidity: z.number(),
+});
+
+export const isCreateAndBuyContentSchema = (
+    obj: any
+): obj is CreateAndBuyContent => {
+    return CreateAndBuyContentSchema.safeParse(obj).success;
+};
 
 export const createAndBuyToken = async ({
     deployer,
@@ -427,15 +427,17 @@ export default {
             runtime,
             context: pumpContext,
             modelClass: ModelClass.LARGE,
+            schema: CreateAndBuyContentSchema,
         });
 
         // Validate the generated content
-        if (!isCreateAndBuyContentForFomo(content)) {
+        if (!isCreateAndBuyContentSchema(content.object)) {
             console.error("Invalid content for CREATE_AND_BUY_TOKEN action.");
             return false;
         }
 
-        const { tokenMetadata, buyAmountSol, requiredLiquidity } = content;
+        const { tokenMetadata, buyAmountSol, requiredLiquidity } =
+            content.object as CreateAndBuyContent;
         /*
             // Generate image if tokenMetadata.file is empty or invalid
             if (!tokenMetadata.file || tokenMetadata.file.length < 100) {  // Basic validation

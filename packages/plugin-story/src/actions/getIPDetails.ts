@@ -1,7 +1,8 @@
+import { z } from "zod";
 import {
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     IAgentRuntime,
@@ -18,6 +19,14 @@ export { getIPDetailsTemplate };
 // Types for the action parameters and response
 type GetIPDetailsParams = {
     ipId: Address;
+};
+
+const GetIPDetailsParamsSchema = z.object({
+    ipId: z.string().length(42).startsWith("0x"),
+});
+
+const isGetIPDetailsParams = (obj: any): obj is GetIPDetailsParams => {
+    return GetIPDetailsParamsSchema.safeParse(obj).success;
 };
 
 type GetIPDetailsResponse = {
@@ -81,16 +90,27 @@ export const getIPDetailsAction = {
             : await runtime.updateRecentMessageState(state);
 
         // Generate content using template
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: composeContext({ state, template: getIPDetailsTemplate }),
             modelClass: ModelClass.SMALL,
+            schema: GetIPDetailsParamsSchema,
         });
+
+        if (!isGetIPDetailsParams(content.object)) {
+            elizaLogger.error("Invalid content for GET_IP_DETAILS action.");
+            callback?.({
+                text: "Unable to process request. Invalid content provided.",
+            });
+            return false;
+        }
 
         // Fetch and format IP details
         const action = new GetIPDetailsAction();
         try {
-            const response = await action.getIPDetails(content);
+            const response = await action.getIPDetails(
+                content.object as GetIPDetailsParams
+            );
             const formattedResponse = formatIPDetails(response.data);
 
             callback?.({

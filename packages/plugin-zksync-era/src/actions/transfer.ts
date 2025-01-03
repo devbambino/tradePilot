@@ -1,6 +1,6 @@
+import { z } from "zod";
 import {
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -16,34 +16,21 @@ import { validateZKsyncConfig } from "../enviroment";
 import { Web3 } from "web3";
 import { ZKsyncPlugin, types, Web3ZKsyncL2 } from "web3-plugin-zksync";
 
-export interface TransferContent extends Content {
+export interface TransferContent {
     tokenAddress: string;
     recipient: string;
     amount: string | number;
 }
 
-export function isTransferContent(
-    content: TransferContent
-): content is TransferContent {
-    // Validate types
-    const validTypes =
-        typeof content.tokenAddress === "string" &&
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number");
-    if (!validTypes) {
-        return false;
-    }
+export const TransferSchema = z.object({
+    tokenAddress: z.string().length(42).startsWith("0x"),
+    recipient: z.string().length(42).startsWith("0x"),
+    amount: z.union([z.string(), z.number()]),
+});
 
-    // Validate addresses
-    const validAddresses =
-        content.tokenAddress.startsWith("0x") &&
-        content.tokenAddress.length === 42 &&
-        content.recipient.startsWith("0x") &&
-        content.recipient.length === 42;
-
-    return validAddresses;
-}
+export const isTransferContent = (object: any): object is TransferContent => {
+    return TransferSchema.safeParse(object).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -116,10 +103,11 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -130,6 +118,8 @@ export default {
             return false;
         }
 
+        const { recipient, tokenAddress, amount } =
+            content.object as TransferContent;
         try {
             const PRIVATE_KEY = runtime.getSetting("ZKSYNC_PRIVATE_KEY")!;
             const PUBLIC_KEY = runtime.getSetting("ZKSYNC_ADDRESS")!;
@@ -148,9 +138,9 @@ export default {
             });
 
             const transferTx = await smartAccount.transfer({
-                to: content.recipient,
-                token: content.tokenAddress,
-                amount: web3.utils.toWei(content.amount, "ether"),
+                to: recipient,
+                token: tokenAddress,
+                amount: web3.utils.toWei(amount, "ether"),
             });
 
             const receipt = await transferTx.wait();

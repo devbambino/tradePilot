@@ -1,9 +1,10 @@
+import { z } from "zod";
 import {
     type Action,
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -25,34 +26,23 @@ import { validateStarknetConfig } from "../environment.ts";
 //     sellAmount: string;
 // }
 
-interface DeployTokenContent {
+export interface DeployTokenContent {
     name: string;
     symbol: string;
     owner: string;
     initialSupply: string;
 }
 
-export function isDeployTokenContent(content: DeployTokenContent) {
-    // Validate types
-    const validTypes =
-        typeof content.name === "string" &&
-        typeof content.symbol === "string" &&
-        typeof content.owner === "string" &&
-        typeof content.initialSupply === "string";
-    if (!validTypes) {
-        return false;
-    }
+export const DeployTokenContentSchema = z.object({
+    name: z.string().min(3),
+    symbol: z.string().min(3),
+    owner: z.string().length(66).startsWith("0x"),
+    initialSupply: z.string(),
+});
 
-    // Validate addresses (must be 32-bytes long with 0x prefix)
-    const validAddresses =
-        content.name.length > 2 &&
-        content.symbol.length > 2 &&
-        parseInt(content.initialSupply) > 0 &&
-        content.owner.startsWith("0x") &&
-        content.owner.length === 66;
-
-    return validAddresses;
-}
+export const isDeployTokenContent = (obj: any): obj is DeployTokenContent => {
+    return DeployTokenContentSchema.safeParse(obj).success;
+};
 
 const deployTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -110,21 +100,23 @@ export const deployToken: Action = {
             template: deployTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: deployContext,
             modelClass: ModelClass.MEDIUM,
+            schema: DeployTokenContentSchema,
         });
 
-        elizaLogger.log("init supply." + response.initialSupply);
-        elizaLogger.log(response);
-
-        if (!isDeployTokenContent(response)) {
+        if (!isDeployTokenContent(content.object)) {
             callback?.({
                 text: "Invalid deployment content, please try again.",
             });
             return false;
         }
+
+        const { name, symbol, owner, initialSupply } = content.object;
+        elizaLogger.log("init supply." + initialSupply);
+        elizaLogger.log(content);
 
         try {
             const provider = getStarknetProvider(runtime);
@@ -139,17 +131,17 @@ export const deployToken: Action = {
             const { tokenAddress, transactionHash } = await createMemecoin(
                 config,
                 {
-                    name: response.name,
-                    symbol: response.symbol,
-                    owner: response.owner,
-                    initialSupply: response.initialSupply,
+                    name: name,
+                    symbol: symbol,
+                    owner: owner,
+                    initialSupply: initialSupply,
                     starknetAccount: account,
                 }
             );
 
             elizaLogger.log(
                 "Token deployment initiated for: " +
-                    response.name +
+                    name +
                     " at address: " +
                     tokenAddress
             );
@@ -165,17 +157,11 @@ export const deployToken: Action = {
                 teamAllocations: [
                     {
                         address: ACCOUNTS.ELIZA,
-                        amount: new Percent(
-                            2.5,
-                            response.initialSupply
-                        ).toFixed(0),
+                        amount: new Percent(2.5, initialSupply).toFixed(0),
                     },
                     {
                         address: ACCOUNTS.BLOBERT,
-                        amount: new Percent(
-                            2.5,
-                            response.initialSupply
-                        ).toFixed(0),
+                        amount: new Percent(2.5, initialSupply).toFixed(0),
                     },
                 ],
             });
@@ -183,7 +169,7 @@ export const deployToken: Action = {
             callback?.({
                 text:
                     "Token Deployment completed successfully!" +
-                    response.symbol +
+                    symbol +
                     " deployed in tx: " +
                     transactionHash,
             });

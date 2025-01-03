@@ -1,7 +1,7 @@
 import {
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     IAgentRuntime,
@@ -14,7 +14,11 @@ import { createHash } from "crypto";
 import { uploadJSONToIPFS } from "../functions/uploadJSONToIPFS";
 import { WalletProvider } from "../providers/wallet";
 import { registerIPTemplate } from "../templates";
-import { RegisterIPParams } from "../types";
+import {
+    RegisterIPParams,
+    RegisterIPParamsSchema,
+    isRegisterIPParams,
+} from "../types";
 
 export { registerIPTemplate };
 
@@ -96,16 +100,25 @@ export const registerIPAction = {
             template: registerIPTemplate,
         });
 
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: registerIPContext,
             modelClass: ModelClass.SMALL,
+            schema: RegisterIPParamsSchema,
         });
+
+        if (!isRegisterIPParams(content.object)) {
+            elizaLogger.error("Invalid content for REGISTER_IP action.");
+            callback?.({
+                text: "Unable to process request. Invalid content provided.",
+            });
+            return false;
+        }
 
         const walletProvider = new WalletProvider(runtime);
         const action = new RegisterIPAction(walletProvider);
         try {
-            const response = await action.registerIP(content, runtime);
+            const response = await action.registerIP(content.object, runtime);
             callback?.({
                 text: `Successfully registered IP ID: ${response.ipId}. Transaction Hash: ${response.txHash}. View it on the explorer: https://explorer.story.foundation/ipa/${response.ipId}`,
             });

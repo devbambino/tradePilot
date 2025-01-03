@@ -1,7 +1,7 @@
 import {
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     IAgentRuntime,
@@ -15,7 +15,11 @@ import {
     LicenseTerms,
     RegisterPILResponse,
 } from "@story-protocol/core-sdk";
-import { AttachTermsParams } from "../types";
+import {
+    isAttachTermsParams,
+    AttachTermsParams,
+    AttachTermsParamsSchema,
+} from "../types";
 import { zeroAddress } from "viem";
 
 export { attachTermsTemplate };
@@ -98,16 +102,28 @@ export const attachTermsAction = {
             template: attachTermsTemplate,
         });
 
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: attachTermsContext,
             modelClass: ModelClass.SMALL,
+            schema: AttachTermsParamsSchema,
         });
+
+        if (!isAttachTermsParams(content.object)) {
+            if (callback) {
+                callback({
+                    text: "Unable to process attach terms request. Invalid content provided.",
+                    content: { error: "Invalid attach terms content" },
+                });
+            }
+            return false;
+        }
 
         const walletProvider = new WalletProvider(runtime);
         const action = new AttachTermsAction(walletProvider);
+        const term = content.object as AttachTermsParams;
         try {
-            const response = await action.attachTerms(content);
+            const response = await action.attachTerms(term);
             // if license terms were attached
             if (response.attachTermsResponse.success) {
                 callback?.({
@@ -117,7 +133,7 @@ export const attachTermsAction = {
             }
             // if license terms were already attached
             callback?.({
-                text: `License terms ${response.registerPilTermsResponse.licenseTermsId} were already attached to IP Asset ${content.ipId}`,
+                text: `License terms ${response.registerPilTermsResponse.licenseTermsId} were already attached to IP Asset ${term.ipId}`,
             });
             return true;
         } catch (e) {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
     getAssociatedTokenAddressSync,
     createTransferInstruction,
@@ -13,7 +14,6 @@ import {
 
 import {
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -23,26 +23,23 @@ import {
 } from "@elizaos/core";
 import { composeContext } from "@elizaos/core";
 import { getWalletKey } from "../keypairUtils";
-import { generateObjectDeprecated } from "@elizaos/core";
+import { generateObject } from "@elizaos/core";
 
-export interface TransferContent extends Content {
+export interface TransferContent {
     tokenAddress: string;
     recipient: string;
     amount: string | number;
 }
 
-function isTransferContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is TransferContent {
-    console.log("Content for transfer", content);
-    return (
-        typeof content.tokenAddress === "string" &&
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+export const TransferSchema = z.object({
+    tokenAddress: z.string().min(42),
+    recipient: z.string().min(42),
+    amount: z.string().or(z.number()),
+});
+
+export const isTransferContent = (object: any): object is TransferContent => {
+    return TransferSchema.safeParse(object).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -118,14 +115,15 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: transferContext,
             modelClass: ModelClass.LARGE,
+            schema: TransferSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(runtime, content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -136,6 +134,8 @@ export default {
             return false;
         }
 
+        const { tokenAddress, recipient, amount } =
+            content.object as TransferContent;
         try {
             const { keypair: senderKeypair } = await getWalletKey(
                 runtime,
@@ -144,8 +144,8 @@ export default {
 
             const connection = new Connection(settings.RPC_URL!);
 
-            const mintPubkey = new PublicKey(content.tokenAddress);
-            const recipientPubkey = new PublicKey(content.recipient);
+            const mintPubkey = new PublicKey(tokenAddress);
+            const recipientPubkey = new PublicKey(recipient);
 
             // Get decimals (simplest way)
             const mintInfo = await connection.getParsedAccountInfo(mintPubkey);
@@ -154,10 +154,10 @@ export default {
 
             // Adjust amount with decimals
             const adjustedAmount = BigInt(
-                Number(content.amount) * Math.pow(10, decimals)
+                Number(amount) * Math.pow(10, decimals)
             );
             console.log(
-                `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
+                `Transferring: ${amount} tokens (${adjustedAmount} base units)`
             );
 
             // Rest of the existing working code...
@@ -214,12 +214,12 @@ export default {
 
             if (callback) {
                 callback({
-                    text: `Successfully transferred ${content.amount} tokens to ${content.recipient}\nTransaction: ${signature}`,
+                    text: `Successfully transferred ${amount} tokens to ${recipient}\nTransaction: ${signature}`,
                     content: {
                         success: true,
                         signature,
-                        amount: content.amount,
-                        recipient: content.recipient,
+                        amount: amount,
+                        recipient: recipient,
                     },
                 });
             }

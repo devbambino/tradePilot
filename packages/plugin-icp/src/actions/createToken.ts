@@ -2,7 +2,7 @@ import {
     composeContext,
     generateImage,
     generateText,
-    generateObjectDeprecated,
+    generateObject,
 } from "@elizaos/core";
 import {
     ActionExample,
@@ -15,7 +15,12 @@ import {
 } from "@elizaos/core";
 import { idlFactory } from "../canisters/pick-pump/index.did";
 import { _SERVICE } from "../canisters/pick-pump/index.did.d";
-import { ActorCreator, CreateMemeTokenArg } from "../types";
+import {
+    ActorCreator,
+    CreateMemeTokenArg,
+    isCreateMemeTokenArg,
+    CreateMemeTokenArgSchema,
+} from "../types";
 import { unwrapOption, wrapOption } from "../utils/common/types/options";
 import { unwrapRustResultMap } from "../utils/common/types/results";
 import { icpWalletProvider } from "../providers/wallet";
@@ -148,17 +153,24 @@ export const executeCreateToken: Action = {
             template: createTokenTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: createTokenContext,
             modelClass: ModelClass.LARGE,
+            schema: CreateMemeTokenArgSchema,
         });
+
+        if (!isCreateMemeTokenArg(content.object)) {
+            throw new Error("Invalid create meme token arg content");
+        }
+
+        const createTokenArg = content.object as CreateMemeTokenArg;
 
         const logoPromptContext = composeContext({
             state,
             template: logoPromptTemplate.replace(
                 "{{description}}",
-                response.description
+                createTokenArg.description
             ),
         });
 
@@ -186,15 +198,13 @@ export const executeCreateToken: Action = {
             );
 
             const creator = wallet.createActor;
-            const createTokenResult = await createTokenTransaction(creator, {
-                name: response.name,
-                symbol: response.symbol,
-                description: response.description,
-                logo: logoUploadResult.urls.gateway,
-            });
+            const createTokenResult = await createTokenTransaction(
+                creator,
+                createTokenArg
+            );
 
             const responseMsg = {
-                text: `✨ Created new meme token:\n🪙 ${response.name} (${response.symbol})\n📝 ${response.description}`,
+                text: `✨ Created new meme token:\n🪙 ${createTokenArg.name} (${createTokenArg.symbol})\n📝 ${createTokenArg.description}`,
                 data: createTokenResult,
                 action: "CREATE_TOKEN",
                 type: "success",

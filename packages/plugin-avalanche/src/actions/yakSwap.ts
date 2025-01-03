@@ -9,33 +9,13 @@ import {
     composeContext,
     generateObject,
     ModelClass,
-    Content,
 } from "@elizaos/core";
 import { approve, getTxReceipt, swap, getQuote } from "../utils";
 import { Address } from "viem";
 import { validateAvalancheConfig } from "../environment";
 import { TOKEN_ADDRESSES, YAK_SWAP_CONFIG } from "../utils/constants";
 
-export interface SwapContent extends Content {
-    fromTokenAddress: string;
-    toTokenAddress: string;
-    recipient?: string;
-    amount: string | number;
-}
-
-function isSwapContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is SwapContent {
-    elizaLogger.debug("Content for swap", content);
-    return (
-        typeof content.fromTokenAddress === "string" &&
-        typeof content.toTokenAddress === "string" &&
-        (typeof content.recipient === "string" || !content.recipient) &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+import { isSwapContent, SwapContent, SwapSchema } from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values
 - Use null for any values that cannot be determined.
@@ -136,10 +116,11 @@ export default {
             runtime,
             context: swapContext,
             modelClass: ModelClass.SMALL,
+            schema: SwapSchema,
         });
 
         // Validate swap content
-        if (!isSwapContent(runtime, content)) {
+        if (!isSwapContent(content.object)) {
             elizaLogger.error("Invalid content for SWAP_TOKEN action.");
             callback?.({
                 text: "Unable to process swap request. Invalid content provided.",
@@ -150,23 +131,21 @@ export default {
 
         // Log the swap content
         elizaLogger.debug("Swap content:", content);
+        const { fromTokenAddress, toTokenAddress, amount } =
+            content.object as SwapContent;
         const quote = await getQuote(
             runtime,
-            content.fromTokenAddress as Address,
-            content.toTokenAddress as Address,
-            content.amount as number
+            fromTokenAddress as Address,
+            toTokenAddress as Address,
+            amount as number
         );
         // return
 
-        if (
-            content.fromTokenAddress ===
-            "0x0000000000000000000000000000000000000000"
-        ) {
+        if (fromTokenAddress === "0x0000000000000000000000000000000000000000") {
             // todo: swap from native
             elizaLogger.log("Swapping from native AVAX");
         } else if (
-            content.toTokenAddress ===
-            "0x0000000000000000000000000000000000000000"
+            toTokenAddress === "0x0000000000000000000000000000000000000000"
         ) {
             // todo: swap to native
             elizaLogger.log("Swapping to native AVAX");
@@ -174,9 +153,9 @@ export default {
             const yakRouterAddress = YAK_SWAP_CONFIG.router as Address;
             const tx = await approve(
                 runtime,
-                content.fromTokenAddress as Address,
+                fromTokenAddress as Address,
                 yakRouterAddress,
-                content.amount as number
+                amount as number
             );
             callback?.({
                 text: "approving token...",

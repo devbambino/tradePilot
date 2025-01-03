@@ -22,15 +22,14 @@ export interface TransferContent extends Content {
     recipient: string;
     amount: string | number;
 }
+export const TransferSchema = z.object({
+    recipient: z.string(),
+    amount: z.union([z.string(), z.number()]),
+});
 
-function isTransferContent(content: Content): content is TransferContent {
-    console.log("Content for transfer", content);
-    return (
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+export const isTransferContent = (object: any): object is TransferContent => {
+    return TransferSchema.safeParse(object).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -102,12 +101,6 @@ const buildTransferDetails = async (
         state = await runtime.updateRecentMessageState(state);
     }
 
-    // Define the schema for the expected output
-    const transferSchema = z.object({
-        recipient: z.string(),
-        amount: z.union([z.string(), z.number()]),
-    });
-
     // Compose transfer context
     const transferContext = composeContext({
         state,
@@ -118,9 +111,12 @@ const buildTransferDetails = async (
     const content = await generateObject({
         runtime,
         context: transferContext,
-        schema: transferSchema,
         modelClass: ModelClass.SMALL,
+        schema: TransferSchema,
     });
+    if (!isTransferContent(content.object)) {
+        throw new Error("Invalid transfer content");
+    }
 
     const transferContent = content.object as TransferContent;
 

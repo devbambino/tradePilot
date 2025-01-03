@@ -1,7 +1,7 @@
 import {
     Action,
     composeContext,
-    generateObjectDeprecated,
+    generateObject,
     IAgentRuntime,
     ModelClass,
     State,
@@ -9,11 +9,11 @@ import {
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { bn } from "fuels";
 import { transferTemplate } from "../templates";
-
-type TransferParams = {
-    toAddress: string;
-    amount: string;
-};
+import {
+    TransferParams,
+    isTransferParams,
+    TransferParamsSchema,
+} from "../types";
 
 export class TransferAction {
     constructor(private walletProvider: WalletProvider) {}
@@ -39,13 +39,18 @@ const buildTransferDetails = async (state: State, runtime: IAgentRuntime) => {
         template: transferTemplate,
     });
 
-    const transferDetails = (await generateObjectDeprecated({
+    const content = await generateObject({
         runtime,
         context,
         modelClass: ModelClass.SMALL,
-    })) as TransferParams;
+        schema: TransferParamsSchema,
+    });
 
-    return transferDetails;
+    if (!isTransferParams(content.object)) {
+        throw new Error("Invalid transfer content");
+    }
+
+    return content.object as TransferParams;
 };
 
 export const transferAction: Action = {

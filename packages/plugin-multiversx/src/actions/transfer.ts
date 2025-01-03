@@ -1,7 +1,6 @@
 import {
     elizaLogger,
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -13,23 +12,11 @@ import {
 } from "@elizaos/core";
 import { WalletProvider } from "../providers/wallet";
 import { validateMultiversxConfig } from "../enviroment";
-
-export interface TransferContent extends Content {
-    tokenAddress: string;
-    amount: string;
-    tokenIdentifier?: string;
-}
-
-function isTransferContent(
-    _runtime: IAgentRuntime,
-    content: any
-): content is TransferContent {
-    console.log("Content for transfer", content);
-    return (
-        typeof content.tokenAddress === "string" &&
-        typeof content.amount === "string"
-    );
-}
+import {
+    isTransferContent,
+    TransferContent,
+    TransferContentSchema,
+} from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -93,10 +80,11 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferContentSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(runtime, content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -107,27 +95,26 @@ export default {
             return false;
         }
 
+        const { tokenAddress, amount, tokenIdentifier } =
+            content.object as TransferContent;
         try {
             const privateKey = runtime.getSetting("MVX_PRIVATE_KEY");
             const network = runtime.getSetting("MVX_NETWORK");
 
             const walletProvider = new WalletProvider(privateKey, network);
 
-            if (
-                content.tokenIdentifier &&
-                content.tokenIdentifier.toLowerCase() !== "egld"
-            ) {
+            if (tokenIdentifier && tokenIdentifier.toLowerCase() !== "egld") {
                 await walletProvider.sendESDT({
-                    receiverAddress: content.tokenAddress,
-                    amount: content.amount,
-                    identifier: content.tokenIdentifier,
+                    receiverAddress: tokenAddress,
+                    amount: amount,
+                    identifier: tokenIdentifier,
                 });
                 return true;
             }
 
             await walletProvider.sendEGLD({
-                receiverAddress: content.tokenAddress,
-                amount: content.amount,
+                receiverAddress: tokenAddress,
+                amount: amount,
             });
             return true;
         } catch (error) {

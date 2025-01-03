@@ -1,7 +1,7 @@
 import {
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     IAgentRuntime,
@@ -10,7 +10,11 @@ import {
 } from "@elizaos/core";
 import { WalletProvider } from "../providers/wallet";
 import { licenseIPTemplate } from "../templates";
-import { LicenseIPParams } from "../types";
+import {
+    LicenseIPParams,
+    LicenseIPParamsSchema,
+    isLicenseIPParams,
+} from "../types";
 import { MintLicenseTokensResponse } from "@story-protocol/core-sdk";
 import { hasIpAttachedLicenseTerms } from "../queries";
 
@@ -69,16 +73,25 @@ export const licenseIPAction = {
             template: licenseIPTemplate,
         });
 
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: licenseIPContext,
             modelClass: ModelClass.SMALL,
+            schema: LicenseIPParamsSchema,
         });
+
+        if (!isLicenseIPParams(content.object)) {
+            elizaLogger.error("Invalid content for LICENSE_IP action.");
+            callback?.({
+                text: "Unable to process request. Invalid content provided.",
+            });
+            return false;
+        }
 
         const walletProvider = new WalletProvider(runtime);
         const action = new LicenseIPAction(walletProvider);
         try {
-            const response = await action.licenseIP(content);
+            const response = await action.licenseIP(content.object);
             callback?.({
                 text: `Successfully minted license tokens: ${response.licenseTokenIds.join(", ")}. Transaction Hash: ${response.txHash}. View it on the block explorer: https://odyssey.storyscan.xyz/tx/${response.txHash}`,
             });

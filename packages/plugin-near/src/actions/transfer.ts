@@ -1,6 +1,5 @@
 import {
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -13,24 +12,12 @@ import {
 import { connect, keyStores, utils } from "near-api-js";
 import { KeyPairString } from "near-api-js/lib/utils";
 import { utils as nearUtils } from "near-api-js";
+import {
+    isTransferContent,
+    TransferContent,
+    TransferContentSchema,
+} from "../types";
 // import BigNumber from "bignumber.js";
-
-export interface TransferContent extends Content {
-    recipient: string;
-    amount: string | number;
-    tokenAddress?: string; // Optional for native NEAR transfers
-}
-
-function isTransferContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is TransferContent {
-    return (
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -128,10 +115,11 @@ export const executeTransfer: Action = {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferContentSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(runtime, content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_NEAR action.");
             if (callback) {
                 callback({
@@ -142,21 +130,22 @@ export const executeTransfer: Action = {
             return false;
         }
 
+        const { recipient, amount } = content.object as TransferContent;
         try {
             const txHash = await transferNEAR(
                 runtime,
-                content.recipient,
-                content.amount.toString()
+                recipient,
+                amount.toString()
             );
 
             if (callback) {
                 callback({
-                    text: `Successfully transferred ${content.amount} NEAR to ${content.recipient}\nTransaction: ${txHash}`,
+                    text: `Successfully transferred ${amount} NEAR to $.recipient}\nTransaction: ${txHash}`,
                     content: {
                         success: true,
                         signature: txHash,
-                        amount: content.amount,
-                        recipient: content.recipient,
+                        amount: amount,
+                        recipient: recipient,
                     },
                 });
             }

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Token } from "@lifi/types";
 import type {
     Account,
@@ -69,6 +70,19 @@ export interface TransferParams {
     data?: `0x${string}`;
 }
 
+export const TransferParamsSchema = z.object({
+    fromChain: z
+        .string()
+        .refine((value) => _SupportedChainList.includes(value as any)),
+    toAddress: z.string(),
+    amount: z.string(),
+    data: z.string().optional(),
+});
+
+export const isTransferParams = (object: any): object is TransferParams => {
+    return TransferParamsSchema.safeParse(object).success;
+};
+
 export interface SwapParams {
     chain: SupportedChain;
     fromToken: Address;
@@ -76,6 +90,20 @@ export interface SwapParams {
     amount: string;
     slippage?: number;
 }
+
+export const SwapParamsSchema = z.object({
+    chain: z
+        .string()
+        .refine((value) => _SupportedChainList.includes(value as any)),
+    fromToken: z.string(),
+    toToken: z.string(),
+    amount: z.string(),
+    slippage: z.number().optional(),
+});
+
+export const isSwapParams = (object: any): object is SwapParams => {
+    return SwapParamsSchema.safeParse(object).success;
+};
 
 export interface BridgeParams {
     fromChain: SupportedChain;
@@ -85,6 +113,23 @@ export interface BridgeParams {
     amount: string;
     toAddress?: Address;
 }
+
+export const BridgeParamsSchema = z.object({
+    fromChain: z
+        .string()
+        .refine((value) => _SupportedChainList.includes(value as any)),
+    toChain: z
+        .string()
+        .refine((value) => _SupportedChainList.includes(value as any)),
+    fromToken: z.string(),
+    toToken: z.string(),
+    amount: z.string(),
+    toAddress: z.string().optional(),
+});
+
+export const isBridgeParams = (object: any): object is BridgeParams => {
+    return BridgeParamsSchema.safeParse(object).success;
+};
 
 // Plugin configuration
 export interface EvmPluginConfig {

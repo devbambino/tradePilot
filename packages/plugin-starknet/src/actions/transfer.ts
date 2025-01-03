@@ -1,13 +1,13 @@
 // TODO: Implement this for Starknet.
 // It should just transfer tokens from the agent's wallet to the recipient.
 
+import { z } from "zod";
 import {
     type Action,
     ActionExample,
     composeContext,
-    Content,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -19,54 +19,23 @@ import { ERC20Token } from "../utils/ERC20Token";
 import { validateStarknetConfig } from "../environment";
 import { getAddressFromName, isStarkDomain } from "../utils/starknetId";
 
-export interface TransferContent extends Content {
+export interface TransferContent {
     tokenAddress: string;
     recipient?: string;
     starkName?: string;
     amount: string | number;
 }
 
-export function isTransferContent(
-    content: TransferContent
-): content is TransferContent {
-    // Validate types
-    const validTypes =
-        typeof content.tokenAddress === "string" &&
-        (typeof content.recipient === "string" ||
-            typeof content.starkName === "string") &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number");
-    if (!validTypes) {
-        return false;
-    }
+export const TransferContentSchema = z.object({
+    tokenAddress: z.string().length(66).startsWith("0x"),
+    recipient: z.string().length(66).startsWith("0x").optional(),
+    starkName: z.string().refine(isStarkDomain).optional(),
+    amount: z.union([z.string(), z.number()]),
+});
 
-    // Validate tokenAddress (must be 32-bytes long with 0x prefix)
-    const validTokenAddress =
-        content.tokenAddress.startsWith("0x") &&
-        content.tokenAddress.length === 66;
-    if (!validTokenAddress) {
-        return false;
-    }
-
-    // Additional checks based on whether recipient or starkName is defined
-    if (content.recipient) {
-        // Validate recipient address (must be 32-bytes long with 0x prefix)
-        const validRecipient =
-            content.recipient.startsWith("0x") &&
-            content.recipient.length === 66;
-        if (!validRecipient) {
-            return false;
-        }
-    } else if (content.starkName) {
-        // .stark name validation
-        const validStarkName = isStarkDomain(content.starkName);
-        if (!validStarkName) {
-            return false;
-        }
-    }
-
-    return true;
-}
+export const isTransferContent = (obj: any): obj is TransferContent => {
+    return TransferContentSchema.safeParse(obj).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -136,16 +105,17 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: transferContext,
             modelClass: ModelClass.MEDIUM,
+            schema: TransferContentSchema,
         });
 
         elizaLogger.debug("Transfer content:", content);
 
         // Validate transfer content
-        if (!isTransferContent(content)) {
+        if (!isTransferContent(content.object)) {
             elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -156,25 +126,30 @@ export default {
             return false;
         }
 
+        const {
+            tokenAddress,
+            recipient: _recipient,
+            starkName,
+            amount,
+        } = content.object as TransferContent;
         try {
             const account = getStarknetAccount(runtime);
-            const erc20Token = new ERC20Token(content.tokenAddress, account);
+            const erc20Token = new ERC20Token(tokenAddress, account);
             const decimals = await erc20Token.decimals();
             // Convert decimal amount to integer before converting to BigInt
             const amountInteger = Math.floor(
-                Number(content.amount) * Math.pow(10, Number(decimals))
+                Number(amount) * Math.pow(10, Number(decimals))
             );
             const amountWei = BigInt(amountInteger.toString());
             const recipient =
-                content.recipient ??
-                (await getAddressFromName(account, content.starkName));
+                _recipient ?? (await getAddressFromName(account, starkName));
             const transferCall = erc20Token.transferCall(recipient, amountWei);
 
             elizaLogger.success(
                 "Transferring",
                 amountWei,
                 "of",
-                content.tokenAddress,
+                tokenAddress,
                 "to",
                 recipient
             );

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Principal } from "@dfinity/principal";
 import type { ActorSubclass } from "@dfinity/agent";
 import type { IDL } from "@dfinity/candid";
@@ -40,4 +41,20 @@ export type CreateMemeTokenArg = {
     twitter?: string;
     website?: string;
     telegram?: string;
+};
+
+export const CreateMemeTokenArgSchema = z.object({
+    name: z.string(),
+    symbol: z.string(),
+    description: z.string(),
+    logo: z.string(),
+    twitter: z.string().optional(),
+    website: z.string().optional(),
+    telegram: z.string().optional(),
+});
+
+export const isCreateMemeTokenArg = (
+    object: any
+): object is CreateMemeTokenArg => {
+    return CreateMemeTokenArgSchema.safeParse(object).success;
 };

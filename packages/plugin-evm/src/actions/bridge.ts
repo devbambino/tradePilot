@@ -1,9 +1,5 @@
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import {
-    composeContext,
-    generateObjectDeprecated,
-    ModelClass,
-} from "@elizaos/core";
+import { composeContext, generateObject, ModelClass } from "@elizaos/core";
 import {
     createConfig,
     executeRoute,
@@ -13,7 +9,12 @@ import {
 
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { bridgeTemplate } from "../templates";
-import type { BridgeParams, Transaction } from "../types";
+import {
+    isBridgeParams,
+    BridgeParamsSchema,
+    BridgeParams,
+    Transaction,
+} from "../types";
 import { parseEther } from "viem";
 
 export { bridgeTemplate };
@@ -105,21 +106,25 @@ export const bridgeAction = {
             state,
             template: bridgeTemplate,
         });
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: bridgeContext,
             modelClass: ModelClass.LARGE,
+            schema: BridgeParamsSchema,
         });
 
-        const bridgeOptions: BridgeParams = {
-            fromChain: content.fromChain,
-            toChain: content.toChain,
-            fromToken: content.token,
-            toToken: content.token,
-            toAddress: content.toAddress,
-            amount: content.amount,
-        };
+        if (!isBridgeParams(content.object)) {
+            console.error("Invalid content for BRIDGE action.");
+            if (callback) {
+                callback({
+                    text: "Unable to process bridge request. Invalid content provided.",
+                    content: { error: "Invalid bridge content" },
+                });
+            }
+            return false;
+        }
 
+        const bridgeOptions = content.object as BridgeParams;
         try {
             const bridgeResp = await action.bridge(bridgeOptions);
             if (callback) {

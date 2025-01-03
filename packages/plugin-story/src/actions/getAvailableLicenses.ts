@@ -1,7 +1,8 @@
+import { z } from "zod";
 import {
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     IAgentRuntime,
@@ -19,6 +20,16 @@ export { licenseIPTemplate };
 // Types for request/response
 type GetAvailableLicensesParams = {
     ipid: Address;
+};
+
+const GetAvailableLicensesParamsSchema = z.object({
+    ipid: z.string().length(42).startsWith("0x"),
+});
+
+const isGetAvailableLicensesParams = (
+    obj: any
+): obj is GetAvailableLicensesParams => {
+    return GetAvailableLicensesParamsSchema.safeParse(obj).success;
 };
 
 type GetAvailableLicensesResponse = {
@@ -114,19 +125,32 @@ export const getAvailableLicensesAction = {
             : await runtime.updateRecentMessageState(state);
 
         // Generate parameters from context
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: composeContext({
                 state,
                 template: getAvailableLicensesTemplate,
             }),
             modelClass: ModelClass.SMALL,
+            schema: GetAvailableLicensesParamsSchema,
         });
+
+        if (!isGetAvailableLicensesParams(content.object)) {
+            elizaLogger.error(
+                "Invalid content for GET_AVAILABLE_LICENSES action."
+            );
+            callback?.({
+                text: "Unable to process request. Invalid content provided.",
+            });
+            return false;
+        }
 
         // Fetch and format license data
         const action = new GetAvailableLicensesAction();
         try {
-            const response = await action.getAvailableLicenses(content);
+            const response = await action.getAvailableLicenses(
+                content.object as GetAvailableLicensesParams
+            );
             const formattedResponse = response.data
                 .map(formatLicenseTerms)
                 .join("\n");

@@ -21,6 +21,7 @@ import {
 } from "@ref-finance/ref-sdk";
 import { walletProvider } from "../providers/wallet";
 import { KeyPairString } from "near-api-js/lib/utils";
+import { isSwapContent, SwapContent, SwapContentSchema } from "../types";
 
 async function checkStorageBalance(
     account: any,
@@ -215,26 +216,27 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObject({
+        const content = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
+            schema: SwapContentSchema,
         });
 
-        console.log("Response:", response);
+        console.log("Response:", content);
 
-        if (
-            !response.inputTokenId ||
-            !response.outputTokenId ||
-            !response.amount
-        ) {
-            console.log("Missing required parameters, skipping swap");
-            const responseMsg = {
-                text: "I need the input token ID, output token ID, and amount to perform the swap",
-            };
-            callback?.(responseMsg);
-            return true;
+        if (!isSwapContent(content.object)) {
+            if (callback) {
+                callback({
+                    text: "Unable to process swap request. Invalid content provided.",
+                    content: { error: "Invalid swap content" },
+                });
+            }
+            return false;
         }
+
+        const { inputTokenId, outputTokenId, amount } =
+            content.object as SwapContent;
 
         try {
             // Get account credentials
@@ -263,9 +265,9 @@ export const executeSwap: Action = {
             // Execute swap
             const swapResult = await swapToken(
                 runtime,
-                response.inputTokenId,
-                response.outputTokenId,
-                response.amount,
+                inputTokenId,
+                outputTokenId,
+                amount.toString(),
                 Number(runtime.getSetting("SLIPPAGE_TOLERANCE")) || 0.01
             );
 

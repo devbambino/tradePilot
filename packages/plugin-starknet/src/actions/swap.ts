@@ -1,9 +1,10 @@
+import { z } from "zod";
 import {
     Action,
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -19,31 +20,21 @@ import {
 import { getStarknetAccount } from "../utils/index.ts";
 import { validateStarknetConfig } from "../environment.ts";
 
-interface SwapContent {
+export interface SwapContent {
     sellTokenAddress: string;
     buyTokenAddress: string;
     sellAmount: string;
 }
 
-export function isSwapContent(content: SwapContent): content is SwapContent {
-    // Validate types
-    const validTypes =
-        typeof content.sellTokenAddress === "string" &&
-        typeof content.buyTokenAddress === "string" &&
-        typeof content.sellAmount === "string";
-    if (!validTypes) {
-        return false;
-    }
+export const SwapContentSchema = z.object({
+    sellTokenAddress: z.string().length(66).startsWith("0x"),
+    buyTokenAddress: z.string().length(66).startsWith("0x"),
+    sellAmount: z.string(),
+});
 
-    // Validate addresses (must be 32-bytes long with 0x prefix)
-    const validAddresses =
-        content.sellTokenAddress.startsWith("0x") &&
-        content.sellTokenAddress.length === 66 &&
-        content.buyTokenAddress.startsWith("0x") &&
-        content.buyTokenAddress.length === 66;
-
-    return validAddresses;
-}
+export const isSwapContent = (obj: any): obj is SwapContent => {
+    return SwapContentSchema.safeParse(obj).success;
+};
 
 const swapTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -105,25 +96,28 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.MEDIUM,
+            schema: SwapContentSchema,
         });
 
-        elizaLogger.debug("Response:", response);
+        elizaLogger.debug("Response:", content);
 
-        if (!isSwapContent(response)) {
+        if (!isSwapContent(content.object)) {
             callback?.({ text: "Invalid swap content, please try again." });
             return false;
         }
 
+        const { sellTokenAddress, buyTokenAddress, sellAmount } =
+            content.object as SwapContent;
         try {
             // Get quote
             const quoteParams: QuoteRequest = {
-                sellTokenAddress: response.sellTokenAddress,
-                buyTokenAddress: response.buyTokenAddress,
-                sellAmount: BigInt(response.sellAmount),
+                sellTokenAddress: sellTokenAddress,
+                buyTokenAddress: buyTokenAddress,
+                sellAmount: BigInt(sellAmount),
             };
 
             const quote = await fetchQuotes(quoteParams);

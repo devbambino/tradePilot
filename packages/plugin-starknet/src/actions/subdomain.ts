@@ -1,5 +1,6 @@
 // It should just transfer subdomain from the root domain owned by the agent's wallet to the recipient.
 
+import { z } from "zod";
 import {
     ActionExample,
     HandlerCallback,
@@ -9,47 +10,29 @@ import {
     State,
     type Action,
     composeContext,
-    generateObjectDeprecated,
-    Content,
+    generateObject,
     elizaLogger,
 } from "@elizaos/core";
 import { getStarknetAccount } from "../utils";
 import { validateStarknetConfig } from "../environment";
 import { getTransferSubdomainCall, isStarkDomain } from "../utils/starknetId";
 
-export interface SubdomainCreationContent extends Content {
+export interface SubdomainCreationContent {
     recipient: string;
     subdomain: string;
 }
+export const SubdomainCreationSchema = z.object({
+    recipient: z.string().length(66).startsWith("0x"),
+    subdomain: z.string().refine((value) => {
+        return isStarkDomain(value) && value.split(".").length === 3;
+    }),
+});
 
-export function isSubdomainCreation(
-    content: SubdomainCreationContent
-): content is SubdomainCreationContent {
-    // Validate types
-    const validTypes =
-        typeof content.recipient === "string" &&
-        typeof content.subdomain === "string";
-    if (!validTypes) {
-        return false;
-    }
-
-    // Validate recipient (must be 32-bytes long with 0x prefix)
-    const validTokenAddress =
-        content.recipient.startsWith("0x") && content.recipient.length === 66;
-    if (!validTokenAddress) {
-        return false;
-    }
-
-    // Validate subdomain
-    const validStarkName =
-        isStarkDomain(content.subdomain) &&
-        content.subdomain.split(".").length === 3;
-
-    if (!validStarkName) {
-        return false;
-    }
-    return true;
-}
+export const isSubdomainCreation = (
+    obj: any
+): obj is SubdomainCreationContent => {
+    return SubdomainCreationSchema.safeParse(obj).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -107,16 +90,17 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: transferContext,
             modelClass: ModelClass.MEDIUM,
+            schema: SubdomainCreationSchema,
         });
 
         elizaLogger.debug("Transfer content:", content);
 
         // Validate transfer content
-        if (!isSubdomainCreation(content)) {
+        if (!isSubdomainCreation(content.object)) {
             elizaLogger.error("Invalid content for CREATE_SUBDOMAIN action.");
             if (callback) {
                 callback({
@@ -127,21 +111,18 @@ export default {
             return false;
         }
 
+        const { subdomain, recipient } =
+            content.object as SubdomainCreationContent;
         try {
             const account = getStarknetAccount(runtime);
 
             const transferCall = getTransferSubdomainCall(
                 account.address,
-                content.subdomain,
-                content.recipient
+                subdomain,
+                recipient
             );
 
-            elizaLogger.success(
-                "Transferring",
-                content.subdomain,
-                "to",
-                content.recipient
-            );
+            elizaLogger.success("Transferring", subdomain, "to", recipient);
 
             const tx = await account.execute(transferCall);
 
@@ -162,7 +143,7 @@ export default {
             elizaLogger.error("Error during subdomain transfer:", error);
             if (callback) {
                 callback({
-                    text: `Error transferring subdomain ${content.subdomain}: ${error.message}`,
+                    text: `Error transferring subdomain ${subdomain}: ${error.message}`,
                     content: { error: error.message },
                 });
             }

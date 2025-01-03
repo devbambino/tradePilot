@@ -1,6 +1,7 @@
+import { z } from "zod";
 import { Address } from "viem";
 
-interface YakSwapQuote {
+export interface YakSwapQuote {
     amounts: bigint[];
     adapters: Address[];
     path: Address[];
@@ -19,7 +20,7 @@ interface YakSwapQuote {
 //     uint256[] askPrices;
 //     bytes args;
 // }
-interface TokenMillMarketCreationParameters {
+export interface TokenMillMarketCreationParameters {
     tokenType: number;
     name: string;
     symbol: string;
@@ -32,4 +33,72 @@ interface TokenMillMarketCreationParameters {
     args: string;
 }
 
-export type { YakSwapQuote, TokenMillMarketCreationParameters }
+export const TokenMillCreateContentSchema = z.object({
+    name: z.string(),
+    symbol: z.string(),
+});
+
+export interface TokenMillCreateContent {
+    name: string;
+    symbol: string;
+}
+
+export const isTokenMillCreateContent = (
+    object: any
+): object is TokenMillCreateContent => {
+    if (TokenMillCreateContentSchema.safeParse(object).success) {
+        return true;
+    }
+    console.error("Invalid content: ", object);
+    return false;
+};
+
+export const TransferSchema = z.object({
+    tokenAddress: z.string(),
+    recipient: z.string(),
+    amount: z.union([z.string(), z.number()]),
+});
+
+export interface TransferContent {
+    tokenAddress: string;
+    recipient: string;
+    amount: string | number;
+}
+
+export const isTransferContent = (object: any): object is TransferContent => {
+    return TransferSchema.safeParse(object).success;
+};
+
+export interface StrategyContent {
+    depositTokenAddress: string;
+    strategyAddress: string;
+    amount: string | number;
+}
+
+export const StrategySchema = z.object({
+    depositTokenAddress: z.string(),
+    strategyAddress: z.string(),
+    amount: z.union([z.string(), z.number()]),
+});
+
+export const isStrategyContent = (object: any): object is StrategyContent => {
+    return StrategySchema.safeParse(object).success;
+};
+
+export interface SwapContent {
+    fromTokenAddress: string;
+    toTokenAddress: string;
+    recipient?: string;
+    amount: string | number;
+}
+
+export const SwapSchema = z.object({
+    fromTokenAddress: z.string(),
+    toTokenAddress: z.string(),
+    recipient: z.string().optional(),
+    amount: z.union([z.string(), z.number()]),
+});
+
+export const isSwapContent = (object: any): object is SwapContent => {
+    return SwapSchema.safeParse(object).success;
+};

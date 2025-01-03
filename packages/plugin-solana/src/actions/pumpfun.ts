@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "@coral-xyz/anchor";
 import { generateImage } from "@elizaos/core";
@@ -8,20 +9,19 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import {
     settings,
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
-    generateObjectDeprecated,
+    generateObject,
     composeContext,
     type Action,
 } from "@elizaos/core";
 
 import { walletProvider } from "../providers/wallet.ts";
 
-export interface CreateAndBuyContent extends Content {
+export interface CreateAndBuyContent {
     tokenMetadata: {
         name: string;
         symbol: string;
@@ -31,22 +31,21 @@ export interface CreateAndBuyContent extends Content {
     buyAmountSol: string | number;
 }
 
-export function isCreateAndBuyContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is CreateAndBuyContent {
-    console.log("Content for create & buy", content);
-    return (
-        typeof content.tokenMetadata === "object" &&
-        content.tokenMetadata !== null &&
-        typeof content.tokenMetadata.name === "string" &&
-        typeof content.tokenMetadata.symbol === "string" &&
-        typeof content.tokenMetadata.description === "string" &&
-        typeof content.tokenMetadata.image_description === "string" &&
-        (typeof content.buyAmountSol === "string" ||
-            typeof content.buyAmountSol === "number")
-    );
-}
+export const CreateAndBuyContentSchema = z.object({
+    tokenMetadata: z.object({
+        name: z.string(),
+        symbol: z.string(),
+        description: z.string(),
+        image_description: z.string(),
+    }),
+    buyAmountSol: z.union([z.string(), z.number()]),
+});
+
+export const isCreateAndBuyContentSchema = (
+    obj: any
+): obj is CreateAndBuyContent => {
+    return CreateAndBuyContentSchema.safeParse(obj).success;
+};
 
 export const createAndBuyToken = async ({
     deployer,
@@ -302,19 +301,21 @@ export default {
             template: pumpfunTemplate,
         });
 
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: pumpContext,
             modelClass: ModelClass.LARGE,
+            schema: CreateAndBuyContentSchema,
         });
 
         // Validate the generated content
-        if (!isCreateAndBuyContent(runtime, content)) {
+        if (!isCreateAndBuyContentSchema(content.object)) {
             console.error("Invalid content for CREATE_AND_BUY_TOKEN action.");
             return false;
         }
 
-        const { tokenMetadata, buyAmountSol } = content;
+        const { tokenMetadata, buyAmountSol } =
+            content.object as CreateAndBuyContent;
         /*
             // Generate image if tokenMetadata.file is empty or invalid
             if (!tokenMetadata.file || tokenMetadata.file.length < 100) {  // Basic validation

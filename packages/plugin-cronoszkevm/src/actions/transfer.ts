@@ -21,34 +21,7 @@ import {
     Web3ZKsyncL2,
 } from "web3-plugin-zksync";
 
-export interface TransferContent extends Content {
-    tokenAddress: string;
-    recipient: string;
-    amount: string | number;
-}
-
-export function isTransferContent(
-    content: TransferContent
-): content is TransferContent {
-    // Validate types
-    const validTypes =
-        typeof content.tokenAddress === "string" &&
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number");
-    if (!validTypes) {
-        return false;
-    }
-
-    // Validate addresses
-    const validAddresses =
-        content.tokenAddress.startsWith("0x") &&
-        content.tokenAddress.length === 42 &&
-        content.recipient.startsWith("0x") &&
-        content.recipient.length === 42;
-
-    return validAddresses;
-}
+import { TransferContent, isTransferContent, TransferSchema } from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -119,10 +92,11 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -150,10 +124,12 @@ export default {
                 secret: "0x" + PRIVATE_KEY,
             });
 
+            const { tokenAddress, recipient, amount } =
+                content.object as TransferContent;
             const transferTx = await smartAccount.transfer({
-                to: content.recipient,
-                token: content.tokenAddress,
-                amount: web3.utils.toWei(content.amount, "ether"),
+                to: recipient,
+                token: tokenAddress,
+                amount: web3.utils.toWei(amount, "ether"),
             });
 
             const receipt = await transferTx.wait();

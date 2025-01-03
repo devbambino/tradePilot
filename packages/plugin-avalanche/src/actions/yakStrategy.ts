@@ -9,31 +9,12 @@ import {
     composeContext,
     generateObject,
     ModelClass,
-    Content,
 } from "@elizaos/core";
 import { approve, deposit, getTxReceipt } from "../utils";
 import { Address } from "viem";
 import { validateAvalancheConfig } from "../environment";
 import { STRATEGY_ADDRESSES, TOKEN_ADDRESSES } from "../utils/constants";
-
-export interface StrategyContent extends Content {
-    depositTokenAddress: string;
-    strategyAddress: string;
-    amount: string | number;
-}
-
-function isStrategyContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is StrategyContent {
-    elizaLogger.debug("Content for strategy", content);
-    return (
-        typeof content.depositTokenAddress === "string" &&
-        typeof content.strategyAddress === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+import { isStrategyContent, StrategySchema, StrategyContent } from "../types";
 
 const strategyTemplate = `Respond with a JSON markdown block containing only the extracted values
 - Use null for any values that cannot be determined.
@@ -116,10 +97,11 @@ export default {
             runtime,
             context: strategyContext,
             modelClass: ModelClass.SMALL,
+            schema: StrategySchema,
         });
 
         // Validate content
-        if (!isStrategyContent(runtime, content)) {
+        if (!isStrategyContent(content.object)) {
             elizaLogger.error(
                 "Invalid content for DEPOSIT_TO_STRATEGY action."
             );
@@ -133,18 +115,19 @@ export default {
         // Log the swap content
         elizaLogger.debug("Deposit content:", content);
 
+        const { depositTokenAddress, strategyAddress, amount } =
+            content.object as StrategyContent;
         if (
-            content.depositTokenAddress ===
-            "0x0000000000000000000000000000000000000000"
+            depositTokenAddress === "0x0000000000000000000000000000000000000000"
         ) {
             // todo: deposit from native
             elizaLogger.log("Swapping from native AVAX");
         } else {
             const tx = await approve(
                 runtime,
-                content.depositTokenAddress as Address,
-                content.strategyAddress as Address,
-                content.amount as number
+                depositTokenAddress as Address,
+                strategyAddress as Address,
+                amount as number
             );
             callback?.({
                 text: "approving token...",
@@ -162,9 +145,9 @@ export default {
 
                     const depositTx = await deposit(
                         runtime,
-                        content.depositTokenAddress as Address,
-                        content.strategyAddress as Address,
-                        content.amount as number
+                        depositTokenAddress as Address,
+                        strategyAddress as Address,
+                        amount as number
                     );
                     if (depositTx) {
                         receipt = await getTxReceipt(runtime, depositTx);

@@ -1,7 +1,8 @@
+import { z } from "zod";
 import {
     ActionExample,
     composeContext,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -15,6 +16,26 @@ import BigNumber from "bignumber.js";
 import { getWalletKey } from "../keypairUtils.ts";
 import { walletProvider, WalletProvider } from "../providers/wallet.ts";
 import { getTokenDecimals } from "./swapUtils.ts";
+
+export interface SwapContent {
+    inputTokenSymbol?: string;
+    outputTokenSymbol?: string;
+    inputTokenCA: string;
+    outputTokenCA: string;
+    amount: number | string;
+}
+
+export const SwapContentSchema = z.object({
+    inputTokenSymbol: z.string().optional(),
+    outputTokenSymbol: z.string().optional(),
+    inputTokenCA: z.string().optional(),
+    outputTokenCA: z.string().optional(),
+    amount: z.union([z.string(), z.number()]),
+});
+
+export const isSwapContent = (obj: any): obj is SwapContent => {
+    return SwapContentSchema.safeParse(obj).success;
+};
 
 async function swapToken(
     connection: Connection,
@@ -198,35 +219,44 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
+            schema: SwapContentSchema,
         });
 
-        console.log("Response:", response);
-        // const type = response.inputTokenSymbol?.toUpperCase() === "SOL" ? "buy" : "sell";
-
-        // Add SOL handling logic
-        if (response.inputTokenSymbol?.toUpperCase() === "SOL") {
-            response.inputTokenCA = settings.SOL_ADDRESS;
+        if (!isSwapContent(content.object)) {
+            console.error("Invalid content for EXECUTE_SWAP action.");
+            if (callback) {
+                callback({
+                    text: "Unable to process swap request. Invalid content provided.",
+                    content: { error: "Invalid swap content" },
+                });
+            }
+            return false;
         }
-        if (response.outputTokenSymbol?.toUpperCase() === "SOL") {
-            response.outputTokenCA = settings.SOL_ADDRESS;
+
+        const { inputTokenSymbol, outputTokenSymbol, amount } =
+            content.object as SwapContent;
+        let { inputTokenCA, outputTokenCA } = content.object as SwapContent;
+        // Add SOL handling logic
+        if (inputTokenSymbol?.toUpperCase() === "SOL") {
+            inputTokenCA = settings.SOL_ADDRESS;
+        }
+        if (outputTokenSymbol?.toUpperCase() === "SOL") {
+            outputTokenCA = settings.SOL_ADDRESS;
         }
 
         // if both contract addresses are set, lets execute the swap
         // TODO: try to resolve CA from symbol based on existing symbol in wallet
-        if (!response.inputTokenCA && response.inputTokenSymbol) {
+        if (!inputTokenCA && inputTokenSymbol) {
             console.log(
-                `Attempting to resolve CA for input token symbol: ${response.inputTokenSymbol}`
+                `Attempting to resolve CA for input token symbol: ${inputTokenSymbol}`
             );
-            response.inputTokenCA = await getTokenFromWallet(
-                runtime,
-                response.inputTokenSymbol
-            );
-            if (response.inputTokenCA) {
-                console.log(`Resolved inputTokenCA: ${response.inputTokenCA}`);
+            inputTokenCA = await getTokenFromWallet(runtime, inputTokenSymbol);
+            if (inputTokenCA) {
+                console.log(`Resolved inputTokenCA: ${inputTokenCA}`);
             } else {
                 console.log("No contract addresses provided, skipping swap");
                 const responseMsg = {
@@ -237,18 +267,16 @@ export const executeSwap: Action = {
             }
         }
 
-        if (!response.outputTokenCA && response.outputTokenSymbol) {
+        if (!outputTokenCA && outputTokenSymbol) {
             console.log(
-                `Attempting to resolve CA for output token symbol: ${response.outputTokenSymbol}`
+                `Attempting to resolve CA for output token symbol: ${outputTokenSymbol}`
             );
-            response.outputTokenCA = await getTokenFromWallet(
+            outputTokenCA = await getTokenFromWallet(
                 runtime,
-                response.outputTokenSymbol
+                outputTokenSymbol
             );
-            if (response.outputTokenCA) {
-                console.log(
-                    `Resolved outputTokenCA: ${response.outputTokenCA}`
-                );
+            if (outputTokenCA) {
+                console.log(`Resolved outputTokenCA: ${outputTokenCA}`);
             } else {
                 console.log("No contract addresses provided, skipping swap");
                 const responseMsg = {
@@ -259,7 +287,7 @@ export const executeSwap: Action = {
             }
         }
 
-        if (!response.amount) {
+        if (!amount) {
             console.log("No amount provided, skipping swap");
             const responseMsg = {
                 text: "I need the amount to perform the swap",
@@ -269,7 +297,7 @@ export const executeSwap: Action = {
         }
 
         // TODO: if response amount is half, all, etc, semantically retrieve amount and return as number
-        if (!response.amount) {
+        if (!amount) {
             console.log("Amount is not a number, skipping swap");
             const responseMsg = {
                 text: "The amount must be a number",
@@ -289,16 +317,16 @@ export const executeSwap: Action = {
             // const provider = new WalletProvider(connection, walletPublicKey);
 
             console.log("Wallet Public Key:", walletPublicKey);
-            console.log("inputTokenSymbol:", response.inputTokenCA);
-            console.log("outputTokenSymbol:", response.outputTokenCA);
-            console.log("amount:", response.amount);
+            console.log("inputTokenSymbol:", inputTokenCA);
+            console.log("outputTokenSymbol:", outputTokenCA);
+            console.log("amount:", amount);
 
             const swapResult = await swapToken(
                 connection,
                 walletPublicKey,
-                response.inputTokenCA as string,
-                response.outputTokenCA as string,
-                response.amount as number
+                inputTokenCA as string,
+                outputTokenCA as string,
+                amount as number
             );
 
             console.log("Deserializing transaction...");

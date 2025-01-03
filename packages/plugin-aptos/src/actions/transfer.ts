@@ -1,7 +1,6 @@
 import { elizaLogger } from "@elizaos/core";
 import {
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -10,7 +9,7 @@ import {
     type Action,
 } from "@elizaos/core";
 import { composeContext } from "@elizaos/core";
-import { generateObjectDeprecated } from "@elizaos/core";
+import { generateObject } from "@elizaos/core";
 import {
     Account,
     Aptos,
@@ -21,20 +20,7 @@ import {
     PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
 import { walletProvider } from "../providers/wallet";
-
-export interface TransferContent extends Content {
-    recipient: string;
-    amount: string | number;
-}
-
-function isTransferContent(content: any): content is TransferContent {
-    console.log("Content for transfer", content);
-    return (
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+import { isTransferContent, TransferSchema, TransferContent } from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -111,14 +97,15 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferSchema,
         });
 
         // Validate transfer content
-        if (!isTransferContent(content)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -147,11 +134,12 @@ export default {
             );
 
             const APT_DECIMALS = 8;
+            const { recipient, amount } = content.object as TransferContent;
             const adjustedAmount = BigInt(
-                Number(content.amount) * Math.pow(10, APT_DECIMALS)
+                Number(amount) * Math.pow(10, APT_DECIMALS)
             );
             console.log(
-                `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
+                `Transferring: ${amount} tokens (${adjustedAmount} base units)`
             );
 
             const tx = await aptosClient.transaction.build.simple({
@@ -159,7 +147,7 @@ export default {
                 data: {
                     function: "0x1::aptos_account::transfer",
                     typeArguments: [],
-                    functionArguments: [content.recipient, adjustedAmount],
+                    functionArguments: [recipient, adjustedAmount],
                 },
             });
             const committedTransaction =
@@ -175,12 +163,12 @@ export default {
 
             if (callback) {
                 callback({
-                    text: `Successfully transferred ${content.amount} APT to ${content.recipient}, Transaction: ${executedTransaction.hash}`,
+                    text: `Successfully transferred ${amount} APT to ${recipient}, Transaction: ${executedTransaction.hash}`,
                     content: {
                         success: true,
                         hash: executedTransaction.hash,
-                        amount: content.amount,
-                        recipient: content.recipient,
+                        amount: amount,
+                        recipient: recipient,
                     },
                 });
             }

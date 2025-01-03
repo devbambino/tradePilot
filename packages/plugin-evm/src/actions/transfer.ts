@@ -2,7 +2,7 @@ import { ByteArray, formatEther, parseEther, type Hex } from "viem";
 import {
     Action,
     composeContext,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     ModelClass,
     type IAgentRuntime,
@@ -11,7 +11,12 @@ import {
 } from "@elizaos/core";
 
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
-import type { Transaction, TransferParams } from "../types";
+import {
+    Transaction,
+    TransferParams,
+    isTransferParams,
+    TransferParamsSchema,
+} from "../types";
 import { transferTemplate } from "../templates";
 
 // Exported for tests
@@ -79,12 +84,18 @@ const buildTransferDetails = async (
         template: transferTemplate,
     });
 
-    const transferDetails = (await generateObjectDeprecated({
+    const content = await generateObject({
         runtime,
         context,
         modelClass: ModelClass.SMALL,
-    })) as TransferParams;
+        schema: TransferParamsSchema,
+    });
 
+    if (!isTransferParams(content.object)) {
+        throw new Error("Invalid content for TRANSFER_TOKEN action.");
+    }
+
+    const transferDetails = content.object as TransferParams;
     const existingChain = wp.chains[transferDetails.fromChain];
 
     if (!existingChain) {

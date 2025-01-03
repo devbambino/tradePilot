@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Token } from "@lifi/types";
 import type {
     Account,
@@ -64,11 +65,31 @@ export interface RegisterIPParams {
     ipType: string;
 }
 
+export const RegisterIPParamsSchema = z.object({
+    title: z.string(),
+    description: z.string(),
+    ipType: z.string(),
+});
+
+export const isRegisterIPParams = (object: any): object is RegisterIPParams => {
+    return RegisterIPParamsSchema.safeParse(object).success;
+};
+
 export interface LicenseIPParams {
     licensorIpId: Address;
     licenseTermsId: string;
     amount: number;
 }
+
+export const LicenseIPParamsSchema = z.object({
+    licensorIpId: z.string(),
+    licenseTermsId: z.string(),
+    amount: z.number(),
+});
+
+export const isLicenseIPParams = (object: any): object is LicenseIPParams => {
+    return LicenseIPParamsSchema.safeParse(object).success;
+};
 
 export interface AttachTermsParams {
     ipId: Address;
@@ -76,6 +97,19 @@ export interface AttachTermsParams {
     commercialUse: boolean;
     commercialRevShare: number;
 }
+
+export const AttachTermsParamsSchema = z.object({
+    ipId: z.string(),
+    mintingFee: z.number(),
+    commercialUse: z.boolean(),
+    commercialRevShare: z.number(),
+});
+
+export const isAttachTermsParams = (
+    object: any
+): object is AttachTermsParams => {
+    return AttachTermsParamsSchema.safeParse(object).success;
+};
 
 // Plugin configuration
 export interface EvmPluginConfig {

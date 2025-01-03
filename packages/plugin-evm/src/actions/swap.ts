@@ -1,9 +1,5 @@
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import {
-    composeContext,
-    generateObjectDeprecated,
-    ModelClass,
-} from "@elizaos/core";
+import { composeContext, generateObject, ModelClass } from "@elizaos/core";
 import {
     createConfig,
     executeRoute,
@@ -13,7 +9,12 @@ import {
 
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { swapTemplate } from "../templates";
-import type { SwapParams, Transaction } from "../types";
+import {
+    SwapParams,
+    isSwapParams,
+    SwapParamsSchema,
+    Transaction,
+} from "../types";
 import { parseEther } from "viem";
 
 export { swapTemplate };
@@ -115,20 +116,24 @@ export const swapAction = {
             state,
             template: swapTemplate,
         });
-        const content = await generateObjectDeprecated({
+        const content = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
+            schema: SwapParamsSchema,
         });
 
-        const swapOptions: SwapParams = {
-            chain: content.chain,
-            fromToken: content.inputToken,
-            toToken: content.outputToken,
-            amount: content.amount,
-            slippage: content.slippage,
-        };
+        if (!isSwapParams(content.object)) {
+            if (callback) {
+                callback({
+                    text: "Unable to process swap request. Invalid content provided.",
+                    content: { error: "Invalid swap content" },
+                });
+            }
+            return false;
+        }
 
+        const swapOptions = content.object as SwapParams;
         try {
             const swapResp = await action.swap(swapOptions);
             if (callback) {
@@ -138,7 +143,7 @@ export const swapAction = {
                         success: true,
                         hash: swapResp.hash,
                         recipient: swapResp.to,
-                        chain: content.chain,
+                        chain: swapOptions.chain,
                     },
                 });
             }

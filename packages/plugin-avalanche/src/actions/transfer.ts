@@ -9,31 +9,12 @@ import {
     composeContext,
     generateObject,
     ModelClass,
-    Content,
 } from "@elizaos/core";
 import { getTxReceipt, sendNativeAsset, sendToken } from "../utils";
 import { Address } from "viem";
 import { validateAvalancheConfig } from "../environment";
 import { TOKEN_ADDRESSES } from "../utils/constants";
-
-export interface TransferContent extends Content {
-    tokenAddress: string;
-    recipient: string;
-    amount: string | number;
-}
-
-function isTransferContent(
-    runtime: IAgentRuntime,
-    content: any
-): content is TransferContent {
-    elizaLogger.debug("Content for transfer", content);
-    return (
-        typeof content.tokenAddress === "string" &&
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+import { isTransferContent, TransferSchema, TransferContent } from "../types";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values
 - Use null for any values that cannot be determined.
@@ -127,12 +108,13 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
+            schema: TransferSchema,
         });
 
         elizaLogger.debug("Transfer content:", content);
 
         // Validate transfer content
-        if (!isTransferContent(runtime, content)) {
+        if (!isTransferContent(content.object)) {
             elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             callback?.({
                 text: "Unable to process transfer request. Invalid content provided.",
@@ -141,22 +123,21 @@ export default {
             return false;
         }
 
+        const { tokenAddress, recipient, amount } =
+            content.object as TransferContent;
         let tx;
-        if (
-            content.tokenAddress ===
-            "0x0000000000000000000000000000000000000000"
-        ) {
+        if (tokenAddress === "0x0000000000000000000000000000000000000000") {
             tx = await sendNativeAsset(
                 runtime,
-                content.recipient as Address,
-                content.amount as number
+                recipient as Address,
+                amount as number
             );
         } else {
             tx = await sendToken(
                 runtime,
-                content.tokenAddress as Address,
-                content.recipient as Address,
-                content.amount as number
+                tokenAddress as Address,
+                recipient as Address,
+                amount as number
             );
         }
 

@@ -1,6 +1,5 @@
 import {
     ActionExample,
-    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -22,19 +21,19 @@ import { parseAccount } from "../utils";
 
 type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 
-export interface TransferContent extends Content {
+export interface TransferContent {
     recipient: string;
     amount: string | number;
 }
 
-function isTransferContent(content: Content): content is TransferContent {
-    console.log("Content for transfer", content);
-    return (
-        typeof content.recipient === "string" &&
-        (typeof content.amount === "string" ||
-            typeof content.amount === "number")
-    );
-}
+export const TransferSchema = z.object({
+    recipient: z.string(),
+    amount: z.union([z.string(), z.number()]),
+});
+
+export const isTransferContent = (object: any): object is TransferContent => {
+    return TransferSchema.safeParse(object).success;
+};
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -104,12 +103,6 @@ export default {
             state = await runtime.updateRecentMessageState(state);
         }
 
-        // Define the schema for the expected output
-        const transferSchema = z.object({
-            recipient: z.string(),
-            amount: z.union([z.string(), z.number()]),
-        });
-
         // Compose transfer context
         const transferContext = composeContext({
             state,
@@ -120,14 +113,11 @@ export default {
         const content = await generateObject({
             runtime,
             context: transferContext,
-            schema: transferSchema,
             modelClass: ModelClass.SMALL,
+            schema: TransferSchema,
         });
 
-        const transferContent = content.object as TransferContent;
-
-        // Validate transfer content
-        if (!isTransferContent(transferContent)) {
+        if (!isTransferContent(content.object)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -137,6 +127,8 @@ export default {
             }
             return false;
         }
+
+        const transferContent = content.object as TransferContent;
 
         try {
             const suiAccount = parseAccount(runtime);
