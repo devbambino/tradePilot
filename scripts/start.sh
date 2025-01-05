@@ -28,16 +28,26 @@ fi
 
 # Install dependencies
 echo "\033[1mInstalling dependencies...\033[0m"
-if ! pnpm install; then
-    echo "\033[1;31mFailed to install dependencies.\033[0m"
-    exit 1
+
+if ! pnpm install ; then
+    if ! pnpm install --no-frozen-lockfile;
+    then
+	echo "\033[1;31mFailed to install dependencies.\033[0m"
+	exit 1
+    fi
 fi
+
 
 # Build project
 echo "\033[1mBuilding project...\033[0m"
 if ! pnpm build; then
     echo "\033[1;31mFailed to build project.\033[0m"
     exit 1
+fi
+
+# rebuild the stuff
+if ! pnpm rebuild ; then
+    echo "\033[1;31mFailed to rebuild.\033[0m"
 fi
 
 # Start project
