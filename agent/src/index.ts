@@ -562,6 +562,12 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            getSecret(character, "TWILIO_ACCOUNT_SID") &&
+            getSecret(character, "TWILIO_AUTH_TOKEN") &&
+            getSecret(character, "TWILIO_PHONE_NUMBER") &&
+            getSecret(character, "TWILIO_WHATSAPP_PHONE_NUMBER")
+                ? twilioPlugin
+                : null,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,

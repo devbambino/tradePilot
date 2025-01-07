@@ -250,7 +250,7 @@ describe("composeContext", () => {
         });
 
         it("should handle missing values in handlebars template", () => {
-            const state = { ...baseState };
+            const state = {...baseState}
             const template = "Hello, {{userName}}!";
 
             const result = composeContext({
