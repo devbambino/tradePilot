@@ -6,6 +6,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { PrivateKeyAccount, keccak256 } from "viem";
 import { RemoteAttestationProvider } from "./remoteAttestationProvider";
 import { TEEMode, RemoteAttestationQuote } from "../types/tee";
+import *  as starknet from "starknet";
 
 interface DeriveKeyAttestationData {
     agentId: string;
@@ -156,6 +157,50 @@ class DeriveKeyProvider {
             throw error;
         }
     }
+
+    async deriveSnKeypair(
+        path: string,
+        subject: string,
+        agentId: string
+    ) : Promise<{
+        keypair: {privateKey: string, publicKey: string};
+        attestation: RemoteAttestationQuote;
+    }> {
+        try {
+            if (!path || !subject) {
+                console.error(
+                    "Path and Subject are required for key derivation"
+                );
+            }
+            console.log("Deriving Starknet Key in TEE...");
+            const derivedKey = await this.client.deriveKey(path, subject);
+            const uint8Parsed = derivedKey.asUint8Array();
+            const stringParsed = uint8Parsed.toString();
+            
+            const privateKey = starknet.starknetKeccak(stringParsed).toString();
+            const publicKey = starknet.ec.starkCurve.getStarkKey(privateKey);
+
+            const argentXaccountClassHash = '0x1a736d6ed154502257f02b1ccdf4d9d1089f80811cd6acad48e6b6a9d1f2003';
+            const AXConstructorCallData = starknet.CallData.compile({
+                owner: publicKey,
+                guardian: '0',
+              });
+            const AXcontractAddress = starknet.hash.calculateContractAddressFromHash(
+                publicKey,
+                argentXaccountClassHash,
+                AXConstructorCallData,
+                0
+            );
+            const attestation = await this.generateDeriveKeyAttestation(
+                agentId,
+                AXcontractAddress    
+            );
+            return { keypair: {privateKey: privateKey, publicKey: publicKey} , attestation: attestation}
+        } catch (error) {
+            console.error("Error deriving Starknet key:", error);
+            throw error;
+        }
+    }
 }
 
 const deriveKeyProvider: Provider = {
@@ -185,9 +230,16 @@ const deriveKeyProvider: Provider = {
                     secretSalt,
                     agentId
                 );
+                const snKeypair = await provider.deriveSnKeypair(
+                    "/",
+                    secretSalt,
+                    agentId
+                );
+
                 return JSON.stringify({
                     solana: solanaKeypair.keypair.publicKey,
                     evm: evmKeypair.keypair.address,
+                    sn: snKeypair.keypair.publicKey
                 });
             } catch (error) {
                 console.error("Error creating PublicKey:", error);
