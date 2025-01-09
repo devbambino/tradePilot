@@ -115,6 +115,10 @@ TWITTER_USERNAME= # Имя пользователя аккаунта
 TWITTER_PASSWORD= # Пароль аккаунта
 TWITTER_EMAIL= # Email аккаунта
 
+TWITTER_API_IO_KEY=elizaOS_public_key_love_truth_future
+# Ключ стороннего API Twitter для получения данных.
+# Это общий тестовый ключ - получите персональный ключ на https://twitterapi.io,
+# чтобы избежать ограничений QPS
 XAI_API_KEY=
 XAI_MODEL=
 
