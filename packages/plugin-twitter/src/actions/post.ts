@@ -60,7 +60,7 @@ async function composeTweet(
     }
 }
 
-async function postTweet(content: string): Promise<boolean> {
+export async function postTweet(content: string): Promise<boolean> {
     try {
         const scraper = new Scraper();
         const username = process.env.TWITTER_USERNAME;

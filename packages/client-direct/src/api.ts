@@ -12,6 +12,7 @@ import {
 import { REST, Routes } from "discord.js";
 import { DirectClient } from ".";
 import { stringToUuid } from "@elizaos/core";
+import { WebhookEvent } from "@elizaos/client-coinbase";
 
 export function createApiRouter(
     agents: Map<string, AgentRuntime>,
@@ -27,6 +28,49 @@ export function createApiRouter(
             limit: getEnvVariable("EXPRESS_MAX_PAYLOAD") || "100kb",
         })
     );
+
+    router.get("/webhook/coinbase/health", (req, res) => {
+        elizaLogger.info("Health check received");
+        res.status(200).json({ status: "ok" });
+    });
+
+    router.post("/webhook/coinbase/:agentId", async (req, res) => {
+        elizaLogger.info("Webhook received for agent:", req.params.agentId);
+        const agentId = req.params.agentId;
+        const runtime = agents.get(agentId);
+
+        if (!runtime) {
+            res.status(404).json({ error: "Agent not found" });
+            return;
+        }
+
+        // Validate the webhook payload
+        const event = req.body as WebhookEvent;
+        if (!event.event || !event.ticker || !event.timestamp || !event.price) {
+            res.status(400).json({ error: "Invalid webhook payload" });
+            return;
+        }
+        if (event.event !== 'buy' && event.event !== 'sell') {
+            res.status(400).json({ error: "Invalid event type" });
+            return;
+        }
+
+        try {
+            // Access the coinbase client through the runtime
+            const coinbaseClient = runtime.clients.coinbase as any;
+            if (!coinbaseClient) {
+                res.status(400).json({ error: "Coinbase client not initialized for this agent" });
+                return;
+            }
+
+            // Forward the webhook event to the client's handleWebhookEvent method
+            await coinbaseClient.handleWebhookEvent(event);
+            res.status(200).json({ status: "success" });
+        } catch (error) {
+            elizaLogger.error("Error processing Coinbase webhook:", error);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    });
 
     router.get("/", (req, res) => {
         res.send("Welcome, this is the REST API!");
@@ -181,6 +225,49 @@ export function createApiRouter(
             console.error("Error fetching memories:", error);
             res.status(500).json({ error: "Failed to fetch memories" });
         }
+    });
+
+    // Add Coinbase webhook forwarding endpoint
+    router.post("/webhook/coinbase/:agentId", async (req, res) => {
+        const agentId = req.params.agentId;
+        const runtime = agents.get(agentId);
+
+        if (!runtime) {
+            res.status(404).json({ error: "Agent not found" });
+            return;
+        }
+
+        // Validate the webhook payload
+        const event = req.body as WebhookEvent;
+        if (!event.event || !event.ticker || !event.timestamp || !event.price) {
+            res.status(400).json({ error: "Invalid webhook payload" });
+            return;
+        }
+        if (event.event !== 'buy' && event.event !== 'sell') {
+            res.status(400).json({ error: "Invalid event type" });
+            return;
+        }
+
+        try {
+            // Access the coinbase client through the runtime
+            const coinbaseClient = runtime.clients.coinbase as any;
+            if (!coinbaseClient) {
+                res.status(400).json({ error: "Coinbase client not initialized for this agent" });
+                return;
+            }
+
+            // Forward the webhook event to the client's handleWebhookEvent method
+            await coinbaseClient.handleWebhookEvent(event);
+            res.status(200).json({ status: "success" });
+        } catch (error) {
+            elizaLogger.error("Error processing Coinbase webhook:", error);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    });
+
+    // Add health check endpoint for Coinbase webhook
+    router.get("/webhook/coinbase/health", (req, res) => {
+        res.status(200).json({ status: "ok" });
     });
 
     return router;
