@@ -107,6 +107,14 @@ export class TwitterInteractionClient {
         handleTwitterInteractionsLoop();
     }
 
+    private containsKeywords(text: string, keywords: string[]): boolean {
+        if (!text || !keywords || keywords.length === 0) {
+            return false;
+        }
+        const lowercaseText = text.toLowerCase();
+        return keywords.some(keyword => lowercaseText.includes(keyword.toLowerCase()));
+    }
+
     async handleTwitterInteractions() {
         elizaLogger.log("Checking Twitter interactions");
 
@@ -215,10 +223,48 @@ export class TwitterInteractionClient {
                 );
             }
 
-            // Sort tweet candidates by ID in ascending order
-            uniqueTweetCandidates
+            // Sort tweet candidates by ID in ascending order and filter out bot's tweets
+            uniqueTweetCandidates = uniqueTweetCandidates
                 .sort((a, b) => a.id.localeCompare(b.id))
                 .filter((tweet) => tweet.userId !== this.client.profile.id);
+
+            // Check for retweet/like opportunities based on keywords
+            const keywords = this.runtime.character.topics || [];
+            for (const tweet of uniqueTweetCandidates) {
+                try {
+                    if (this.containsKeywords(tweet.text, keywords)) {
+                        // Don't retweet/like our own tweets
+                        if (tweet.userId !== this.client.profile.id) {
+                            elizaLogger.log(`Found keyword match in tweet ${tweet.id}, attempting retweet/like`);
+                            
+                            // Attempt to retweet
+                            try {
+                                await this.client.requestQueue.add(
+                                    async () => await this.client.twitterClient.retweet(tweet.id)
+                                );
+                                elizaLogger.log(`Successfully retweeted tweet ${tweet.id}`);
+                            } catch (error) {
+                                elizaLogger.error(`Failed to retweet tweet ${tweet.id}:`, error);
+                            }
+
+                            // Attempt to like
+                            try {
+                                await this.client.requestQueue.add(
+                                    async () => await this.client.twitterClient.likeTweet(tweet.id)
+                                );
+                                elizaLogger.log(`Successfully liked tweet ${tweet.id}`);
+                            } catch (error) {
+                                elizaLogger.error(`Failed to like tweet ${tweet.id}:`, error);
+                            }
+
+                            // Add delay between actions to avoid rate limits
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        }
+                    }
+                } catch (error) {
+                    elizaLogger.error(`Error processing tweet ${tweet.id} for retweet/like:`, error);
+                }
+            }
 
             // for each tweet candidate, handle the tweet
             for (const tweet of uniqueTweetCandidates) {

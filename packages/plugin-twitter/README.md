@@ -1,257 +1,226 @@
-# @elizaos/plugin-twitter
+# Twitter Plugin for Eliza
 
-A plugin for Twitter/X integration, providing automated tweet posting capabilities with character-aware content generation.
+A powerful Twitter integration plugin that enables automated monitoring, posting, and interaction capabilities with advanced image handling and timing controls.
 
-## Overview
+## Features
 
-This plugin provides functionality to:
-- Compose context-aware tweets
-- Post tweets to Twitter/X platform
-- Handle authentication and session management
-- Support premium Twitter features
-- Manage tweet length restrictions
+### Automated Twitter Monitoring and Interaction
+- **Keyword-based Monitoring**: Monitor tweets containing specific keywords
+- **User Tracking**: Follow and monitor up to 50 specific Twitter accounts
+- **Smart Filtering**: Requires minimum 2 keyword matches for actions
+- **Customizable Active Hours**: Set specific hours for bot activity (default: 7 AM - 11 PM)
 
-## Installation
+### Advanced Tweet Generation
+- **Dynamic Content**: Generates contextual tweets based on recent interactions
+- **Multiple Tweet Styles**:
+  - Standard posts
+  - Questions
+  - Announcements
+  - Thoughts
+  - Excited messages
+  - Formatted lists
+- **Smart Emoji Integration**: Automatically adds relevant emojis based on content mood
+- **Character Limit Control**: Ensures all tweets are under 180 characters
 
-```bash
-npm install @elizaos/plugin-twitter
+### Image Management
+- **Custom Image Support**:
+  - Upload and use your own images via URLs
+  - Automatic image rotation at specified intervals
+  - Built-in image caching system (7-day cache)
+- **Categorized Image Sets**:
+  - Technology
+  - Nature
+  - Business
+  - Custom categories
+- **Image Processing**:
+  - Automatic download and caching
+  - Format validation
+  - Error handling
+
+### Interaction Features
+- **Auto-Retweeting**: Automatically retweet matching content
+- **Smart Quoting**: Generate contextual quote tweets
+- **Auto-Replies**: Respond to relevant tweets automatically
+- **Age Control**: Filter tweets based on their age (default: max 60 minutes old)
+
+## Configuration Guide
+
+### Basic Setup
+
+1. Enable Twitter client in your character file:
+```json
+{
+  "name": "YourBot",
+  "clients": ["twitter"],
+  "settings": {
+    "twitter": {
+      "monitor": {
+        // Timing Controls
+        "activeTimeStart": 7,        // Start activity at 7 AM
+        "activeTimeEnd": 23,         // End activity at 11 PM
+        "postInterval": 43200,       // Post every 12 hours (in seconds)
+        "replyInterval": 7200,       // Reply every 2 hours (in seconds)
+        "minTimeBetweenActions": 300,// Minimum 5 minutes between actions
+
+        // Monitoring Settings
+        "keywords": ["blockchain", "web3", "AI", "crypto"],
+        "minKeywordMatches": 2,      // Require at least 2 keyword matches
+        "users": [
+          "vitalikbuterin",
+          "elonmusk",
+          "naval"
+        ],
+        "maxUsers": 50,
+
+        // Image Settings
+        "customImageUrls": [
+          "https://your-domain.com/tech1.jpg",
+          "https://your-domain.com/tech2.jpg",
+          "https://your-domain.com/crypto1.jpg"
+        ],
+        "imageRotationInterval": 60, // Rotate images every 60 minutes
+
+        // Interaction Controls
+        "retweetEnabled": true,
+        "quoteEnabled": true,
+        "replyEnabled": true,
+        "maxTweetAge": 60           // Only interact with tweets under 60 minutes old
+      }
+    }
+  }
+}
 ```
 
-## Configuration
+### Complete Configuration Example
 
-The plugin requires the following environment variables:
+```json
+{
+  "name": "CryptoBot",
+  "description": "A bot that monitors and engages with crypto-related content",
+  "clients": ["twitter"],
+  "settings": {
+    "twitter": {
+      "username": "your_twitter_username",
+      "monitor": {
+        // Time Settings
+        "activeTimeStart": 7,
+        "activeTimeEnd": 23,
+        "postInterval": 43200,      // 12 hours in seconds
+        "replyInterval": 7200,      // 2 hours in seconds
+        "minTimeBetweenActions": 300,
 
-```env
-TWITTER_USERNAME=your_username
-TWITTER_PASSWORD=your_password
-TWITTER_EMAIL=your_email              # Optional: for 2FA
-TWITTER_2FA_SECRET=your_2fa_secret    # Optional: for 2FA
-TWITTER_PREMIUM=false                 # Optional: enables premium features
-TWITTER_DRY_RUN=false                # Optional: test without posting
+        // Content Monitoring
+        "keywords": [
+          "blockchain",
+          "ethereum",
+          "bitcoin",
+          "web3",
+          "defi"
+        ],
+        "minKeywordMatches": 2,
+        "users": [
+          "vitalikbuterin",
+          "elonmusk",
+          "naval",
+          "cz_binance"
+        ],
+
+        // Image Configuration
+        "customImageUrls": [
+          "https://your-domain.com/images/crypto1.jpg",
+          "https://your-domain.com/images/blockchain2.jpg",
+          "https://your-domain.com/images/web3-3.jpg"
+        ],
+        "imageRotationInterval": 60,
+
+        // Interaction Settings
+        "retweetEnabled": true,
+        "quoteEnabled": true,
+        "replyEnabled": true,
+        "maxTweetAge": 60
+      }
+    }
+  }
+}
 ```
 
 ## Usage
 
-Import and register the plugin in your Eliza configuration:
-
-```typescript
-import { twitterPlugin } from "@elizaos/plugin-twitter";
-
-export default {
-  plugins: [twitterPlugin],
-  // ... other configuration
-};
-```
-
-## Features
-
-### Tweet Composition
-
-The plugin uses context-aware templates to generate appropriate tweets:
-
-```typescript
-import { postAction } from "@elizaos/plugin-twitter";
-
-// Tweet will be composed based on context and character limits
-const result = await postAction.handler(runtime, message, state);
-```
-
-### Tweet Posting
-
-```typescript
-// Post with automatic content generation
-await postAction.handler(runtime, message, state);
-
-// Dry run mode (for testing)
-process.env.TWITTER_DRY_RUN = "true";
-await postAction.handler(runtime, message, state);
-```
-
-## Development
-
-### Building
-
+1. Install the plugin:
 ```bash
-npm run build
+pnpm add @elizaos/plugin-twitter
 ```
 
-### Testing
+2. Create your character configuration file (e.g., `mybot.json`)
 
+3. Start Eliza with your custom character:
 ```bash
-npm run test
+pnpm start --characters="path/to/mybot.json"
 ```
 
-### Development Mode
+## Key Features Explained
 
-```bash
-npm run dev
+### 1. Timed Posting
+- Posts every 12 hours (`postInterval: 43200`)
+- Active only between 7 AM and 11 PM (`activeTimeStart` and `activeTimeEnd`)
+- Maintains minimum intervals between actions (`minTimeBetweenActions`)
+
+### 2. Smart Retweeting
+- Requires 2+ keyword matches (`minKeywordMatches: 2`)
+- Monitors specific accounts (`users` array)
+- Only retweets recent content (`maxTweetAge: 60`)
+
+### 3. Image Management
+- Rotates through custom images (`customImageUrls`)
+- Never repeats images within the rotation interval
+- Automatically caches downloaded images
+- Validates image formats and handles errors
+
+### 4. Interaction Control
+- Configurable retweet, quote, and reply settings
+- Time-based filtering of content
+- Smart context-aware responses
+
+## Important Notes
+
+- All time intervals are in seconds
+- Image URLs must be directly accessible
+- The bot will automatically handle image downloading and caching
+- Twitter API credentials should be configured in your `.env` file
+
+## Implementation Details
+
+The plugin consists of two main components:
+
+1. `monitor.ts`: Handles the main monitoring logic
+   - Tweet monitoring and filtering
+   - Time-based controls
+   - Interaction management
+
+2. `templates.ts`: Manages tweet generation and image handling
+   - Tweet template processing
+   - Image downloading and caching
+   - Emoji integration
+   - Style variations
+
+## Environment Variables
+
+Required Twitter API credentials in `.env`:
+```
+TWITTER_API_KEY=your_api_key
+TWITTER_API_SECRET=your_api_secret
+TWITTER_ACCESS_TOKEN=your_access_token
+TWITTER_ACCESS_TOKEN_SECRET=your_token_secret
 ```
 
-## Dependencies
+## Error Handling
 
-- `@elizaos/core`: Core Eliza functionality
-- `agent-twitter-client`: Twitter API client
-- `tsup`: Build tool
-- Other standard dependencies listed in package.json
-
-## API Reference
-
-### Core Interfaces
-
-```typescript
-interface TweetContent {
-    text: string;
-}
-
-// Tweet Schema
-const TweetSchema = z.object({
-    text: z.string().describe("The text of the tweet")
-});
-
-// Action Interface
-interface Action {
-    name: "POST_TWEET";
-    similes: string[];
-    description: string;
-    validate: (runtime: IAgentRuntime, message: Memory, state?: State) => Promise<boolean>;
-    handler: (runtime: IAgentRuntime, message: Memory, state?: State) => Promise<boolean>;
-    examples: Array<Array<any>>;
-}
-```
-
-### Plugin Methods
-
-- `postAction.handler`: Main method for posting tweets
-- `postAction.validate`: Validates Twitter credentials
-- `composeTweet`: Internal method for tweet generation
-- `postTweet`: Internal method for tweet posting
-
-## Common Issues/Troubleshooting
-
-### Issue: Authentication Failures
-- **Cause**: Invalid credentials or 2FA configuration
-- **Solution**: Verify credentials and 2FA setup
-
-### Issue: Tweet Length Errors
-- **Cause**: Content exceeds Twitter's character limit
-- **Solution**: Enable TWITTER_PREMIUM for extended tweets or ensure content is within limits
-
-### Issue: Rate Limiting
-- **Cause**: Too many requests in short time
-- **Solution**: Implement proper request throttling
-
-## Security Best Practices
-
-- Store credentials securely using environment variables
-- Use 2FA when possible
-- Implement proper error handling
-- Keep dependencies updated
-- Use dry run mode for testing
-- Monitor Twitter API usage
-
-## Template System
-
-The plugin uses a sophisticated template system for tweet generation:
-
-```typescript
-const tweetTemplate = `
-# Context
-{{recentMessages}}
-
-# Topics
-{{topics}}
-
-# Post Directions
-{{postDirections}}
-
-# Recent interactions
-{{recentPostInteractions}}
-
-# Task
-Generate a tweet that:
-1. Relates to the recent conversation
-2. Matches the character's style
-3. Is concise and engaging
-4. Must be UNDER 180 characters
-5. Speaks from the perspective of {{agentName}}
-`;
-```
-
-## Future Enhancements
-
-1. **Content Generation**
-   - Advanced context awareness
-   - Multi-language support
-   - Style customization
-   - Hashtag optimization
-   - Media generation
-   - Thread composition
-
-2. **Engagement Features**
-   - Auto-reply system
-   - Engagement analytics
-   - Follower management
-   - Interaction scheduling
-   - Sentiment analysis
-   - Community management
-
-3. **Tweet Management**
-   - Thread management
-   - Tweet scheduling
-   - Content moderation
-   - Archive management
-   - Delete automation
-   - Edit optimization
-
-4. **Analytics Integration**
-   - Performance tracking
-   - Engagement metrics
-   - Audience insights
-   - Trend analysis
-   - ROI measurement
-   - Custom reporting
-
-5. **Authentication**
-   - OAuth improvements
-   - Multi-account support
-   - Session management
-   - Rate limit handling
-   - Security enhancements
-   - Backup mechanisms
-
-6. **Developer Tools**
-   - Enhanced debugging
-   - Testing framework
-   - Documentation generator
-   - Integration templates
-   - Error handling
-   - Logging system
-
-We welcome community feedback and contributions to help prioritize these enhancements.
+The plugin includes robust error handling for:
+- Image download failures
+- API rate limits
+- Network issues
+- Invalid configurations
 
 ## Contributing
 
-Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
-
-
-## Credits
-
-This plugin integrates with and builds upon several key technologies:
-
-- [Twitter/X API](https://developer.twitter.com/en/docs): Official Twitter platform API
-- [agent-twitter-client](https://www.npmjs.com/package/agent-twitter-client): Twitter API client library
-- [Zod](https://github.com/colinhacks/zod): TypeScript-first schema validation
-
-Special thanks to:
-- The Twitter/X Developer Platform team
-- The agent-twitter-client maintainers for API integration tools
-- The Eliza community for their contributions and feedback
-
-For more information about Twitter/X integration capabilities:
-- [Twitter API Documentation](https://developer.twitter.com/en/docs)
-- [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
-- [Twitter API Best Practices](https://developer.twitter.com/en/docs/twitter-api/rate-limits)
-
-## License
-
-This plugin is part of the Eliza project. See the main project repository for license information.
+Feel free to submit issues and enhancement requests!

@@ -21,6 +21,11 @@ export const twitterEnvSchema = z.object({
     TWITTER_USERNAME: z.string().min(1, "X/Twitter username is required"),
     TWITTER_PASSWORD: z.string().min(1, "X/Twitter password is required"),
     TWITTER_EMAIL: z.string().email("Valid X/Twitter email is required"),
+    TWITTER_API_KEY: z.string().min(1, "Twitter API key is required"),
+    TWITTER_API_SECRET: z.string().min(1, "Twitter API secret is required"),
+    TWITTER_ACCESS_TOKEN: z.string().min(1, "Twitter access token is required"),
+    TWITTER_ACCESS_SECRET: z.string().min(1, "Twitter access token secret is required"),
+    TWITTER_BEARER_TOKEN: z.string().min(1, "Twitter bearer token is required"),
     MAX_TWEET_LENGTH: z.number().int().default(DEFAULT_MAX_TWEET_LENGTH),
     TWITTER_SEARCH_ENABLE: z.boolean().default(false),
     TWITTER_2FA_SECRET: z.string(),
@@ -119,6 +124,31 @@ export async function validateTwitterConfig(
             TWITTER_EMAIL:
                 runtime.getSetting("TWITTER_EMAIL") ||
                 process.env.TWITTER_EMAIL,
+
+            TWITTER_API_KEY:
+                runtime.getSetting("TWITTER_API_KEY") ||
+                process.env.TWITTER_API_KEY ||
+                "LQNpbu5dEnMFb38ThQVyASH6B",
+
+            TWITTER_API_SECRET:
+                runtime.getSetting("TWITTER_API_SECRET") ||
+                process.env.TWITTER_API_SECRET ||
+                "aDn9eLtrSAtOZfOxWdJv6pUislA2beDx8iaeUNAAfqm5Dqm5Ok",
+
+            TWITTER_ACCESS_TOKEN:
+                runtime.getSetting("TWITTER_ACCESS_TOKEN") ||
+                process.env.TWITTER_ACCESS_TOKEN ||
+                "1864125075886362624-B9Wi10ABPpdVorOku0hlcci5PatHGU",
+
+            TWITTER_ACCESS_SECRET:
+                runtime.getSetting("TWITTER_ACCESS_SECRET") ||
+                process.env.TWITTER_ACCESS_SECRET ||
+                "JIfdfNQOV9iUrx5uQn1HuImVLukduwC22v2Pal2RCO7Yn",
+
+            TWITTER_BEARER_TOKEN:
+                runtime.getSetting("TWITTER_BEARER_TOKEN") ||
+                process.env.TWITTER_BEARER_TOKEN ||
+                "AAAAAAAAAAAAAAAAAAAAAG%2BlxwEAAAAApMWCY2n%2BFdZjCaHJIRqe5midQUE%3Dy3fmefcx7uIWOoZ4l8ZG3Jyr7jnq8jEeT8XTbUKbqtYYuxufYd",
 
             // number as string?
             MAX_TWEET_LENGTH: safeParseInt(

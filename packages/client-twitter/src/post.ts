@@ -356,13 +356,41 @@ export class TwitterPostClient {
         }
     }
 
+    async sendTweetWithMedia(
+        client: ClientBase,
+        content: string,
+        imagePaths: string[],
+        tweetId?: string
+    ) {
+        try {
+            const fs = require('fs').promises;
+            const path = require('path');
+            const mime = require('mime-types');
+
+            // Convert image paths to media objects with Buffer and mediaType
+            const mediaData = await Promise.all(imagePaths.map(async (imagePath) => {
+                const data = await fs.readFile(imagePath);
+                const mediaType = mime.lookup(imagePath) || 'image/jpeg';
+                return { data, mediaType };
+            }));
+
+            // Send tweet with media
+            const result = await client.twitterClient.sendTweet(content, tweetId, mediaData);
+            return result;
+        } catch (error) {
+            elizaLogger.error("Error sending tweet with media:", error);
+            throw error;
+        }
+    }
+
     async postTweet(
         runtime: IAgentRuntime,
         client: ClientBase,
         cleanedContent: string,
         roomId: UUID,
         newTweetContent: string,
-        twitterUsername: string
+        twitterUsername: string,
+        imagePaths?: string[]
     ) {
         try {
             elizaLogger.log(`Posting new tweet:\n`);
@@ -375,6 +403,8 @@ export class TwitterPostClient {
                     runtime,
                     cleanedContent
                 );
+            } else if (imagePaths && imagePaths.length > 0) {
+                result = await this.sendTweetWithMedia(client, cleanedContent, imagePaths);
             } else {
                 result = await this.sendStandardTweet(client, cleanedContent);
             }
@@ -400,7 +430,7 @@ export class TwitterPostClient {
     /**
      * Generates and posts a new tweet. If isDryRun is true, only logs what would have been posted.
      */
-    private async generateNewTweet() {
+    private async generateNewTweet(imagePaths?: string[]) {
         elizaLogger.log("Generating new tweet");
 
         try {
@@ -511,7 +541,8 @@ export class TwitterPostClient {
                     cleanedContent,
                     roomId,
                     newTweetContent,
-                    this.twitterUsername
+                    this.twitterUsername,
+                    imagePaths
                 );
             } catch (error) {
                 elizaLogger.error("Error sending tweet:", error);
