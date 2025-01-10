@@ -641,6 +641,7 @@ export enum Clients {
     TWITTER = "twitter",
     TELEGRAM = "telegram",
     FARCASTER = "farcaster",
+    WHATSAPP = "whatsapp",
     LENS = "lens",
     AUTO = "auto",
     SLACK = "slack",

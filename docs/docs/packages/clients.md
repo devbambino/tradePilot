@@ -39,13 +39,12 @@ graph TD
 - **Twitter** (`@eliza/client-twitter`) - Twitter bot and interaction handling
 - **Telegram** (`@eliza/client-telegram`) - Telegram bot integration
 - **Direct** (`@eliza/client-direct`) - Direct API interface for custom integrations
-- **Auto** (`@eliza/client-auto`) - Automated trading and interaction client
 
 ---
 
 ## Installation
 
-```bash
+````bash
 # Discord
 pnpm add @eliza/client-discord
 
@@ -57,10 +56,6 @@ pnpm add @eliza/client-telegram
 
 # Direct API
 pnpm add @eliza/client-direct
-
-# Auto Client
-pnpm add @eliza/client-auto
-```
 
 ---
 
@@ -79,7 +74,7 @@ const client = await DiscordClientInterface.start(runtime);
 // Configuration in .env
 DISCORD_APPLICATION_ID = your_app_id;
 DISCORD_API_TOKEN = your_bot_token;
-```
+````
 
 ### Features
 
@@ -249,19 +244,6 @@ class DirectClient {
         });
     }
 }
-```
-
-## Auto Client
-
-The Auto client enables automated interactions and trading.
-
-### Basic Setup
-
-```typescript
-import { AutoClientInterface } from "@eliza/client-auto";
-
-// Initialize client
-const client = await AutoClientInterface.start(runtime);
 ```
 
 ### Automated Trading
