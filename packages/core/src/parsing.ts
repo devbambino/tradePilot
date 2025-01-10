@@ -19,22 +19,16 @@ Your response must include one of the options.`;
 export const parseShouldRespondFromText = (
     text: string
 ): "RESPOND" | "IGNORE" | "STOP" | null => {
-    const match = text
-        .split("\n")[0]
-        .trim()
-        .replace(/\[/g, "")
-        .toUpperCase()
-        .replace(/\]/g, "")
-        .match(/^(RESPOND|IGNORE|STOP)$/i);
-    return match
-        ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
-        : text.includes("RESPOND")
-          ? "RESPOND"
-          : text.includes("IGNORE")
-            ? "IGNORE"
-            : text.includes("STOP")
-              ? "STOP"
-              : null;
+    const validResponses = ["RESPOND", "IGNORE", "STOP"];
+    const firstLine = text.split("\n")[0].trim().replace(/[\[\]]/g, "").toUpperCase();
+
+    // Check exact match first
+    if (validResponses.includes(firstLine)) {
+        return firstLine as "RESPOND" | "IGNORE" | "STOP";
+    }
+
+    // Fallback to includes check
+    return validResponses.find(response => text.includes(response)) ?? null;
 };
 
 export const parsePizzaDecisionFromText = (
@@ -197,34 +191,17 @@ export const postActionResponseFooter = `Choose any combination of [LIKE], [RETW
 export const parseActionResponseFromText = (
     text: string
 ): { actions: ActionResponse } => {
-    const actions: ActionResponse = {
-        like: false,
-        retweet: false,
-        quote: false,
-        reply: false,
+    const patterns = {
+        like: /\[LIKE\]/i,
+        retweet: /\[RETWEET\]/i,
+        quote: /\[QUOTE\]/i,
+        reply: /\[REPLY\]/i
     };
 
-    // Regex patterns
-    const likePattern = /\[LIKE\]/i;
-    const retweetPattern = /\[RETWEET\]/i;
-    const quotePattern = /\[QUOTE\]/i;
-    const replyPattern = /\[REPLY\]/i;
-
-    // Check with regex
-    actions.like = likePattern.test(text);
-    actions.retweet = retweetPattern.test(text);
-    actions.quote = quotePattern.test(text);
-    actions.reply = replyPattern.test(text);
-
-    // Also do line by line parsing as backup
-    const lines = text.split("\n");
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === "[LIKE]") actions.like = true;
-        if (trimmed === "[RETWEET]") actions.retweet = true;
-        if (trimmed === "[QUOTE]") actions.quote = true;
-        if (trimmed === "[REPLY]") actions.reply = true;
-    }
+    const actions = Object.entries(patterns).reduce((acc, [key, pattern]) => ({
+        ...acc,
+        [key]: pattern.test(text) || text.split('\n').includes(`[${key.toUpperCase()}]`)
+    }), {} as ActionResponse);
 
     return { actions };
 };

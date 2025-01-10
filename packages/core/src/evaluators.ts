@@ -40,10 +40,7 @@ export function formatEvaluatorNames(evaluators: Evaluator[]) {
  */
 export function formatEvaluators(evaluators: Evaluator[]) {
     return evaluators
-        .map(
-            (evaluator: Evaluator) =>
-                `'${evaluator.name}: ${evaluator.description}'`
-        )
+        .map(({ name, description }) => `'${name}: ${description}'`)
         .join(",\n");
 }
 
@@ -54,52 +51,50 @@ export function formatEvaluators(evaluators: Evaluator[]) {
  */
 export function formatEvaluatorExamples(evaluators: Evaluator[]) {
     return evaluators
-        .map((evaluator) => {
-            return evaluator.examples
-                .map((example) => {
-                    const exampleNames = Array.from({ length: 5 }, () =>
-                        uniqueNamesGenerator({ dictionaries: [names] })
+        .flatMap(({ examples }) =>
+            examples.map((example) => {
+                const exampleNames = [...Array(5)].map(() =>
+                    uniqueNamesGenerator({ dictionaries: [names] })
+                );
+
+                const { context, messages, outcome } = example;
+                let formattedContext = context;
+                let formattedOutcome = outcome;
+
+                exampleNames.forEach((name, index) => {
+                    const placeholder = `{{user${index + 1}}}`;
+                    formattedContext = formattedContext.replaceAll(
+                        placeholder,
+                        name
                     );
+                    formattedOutcome = formattedOutcome.replaceAll(
+                        placeholder,
+                        name
+                    );
+                });
 
-                    let formattedContext = example.context;
-                    let formattedOutcome = example.outcome;
-
-                    exampleNames.forEach((name, index) => {
-                        const placeholder = `{{user${index + 1}}}`;
-                        formattedContext = formattedContext.replaceAll(
-                            placeholder,
-                            name
-                        );
-                        formattedOutcome = formattedOutcome.replaceAll(
-                            placeholder,
-                            name
-                        );
-                    });
-
-                    const formattedMessages = example.messages
-                        .map((message: ActionExample) => {
-                            let messageString = `${message.user}: ${message.content.text}`;
-                            exampleNames.forEach((name, index) => {
-                                const placeholder = `{{user${index + 1}}}`;
-                                messageString = messageString.replaceAll(
-                                    placeholder,
-                                    name
-                                );
-                            });
-                            return (
-                                messageString +
-                                (message.content.action
-                                    ? ` (${message.content.action})`
-                                    : "")
+                const formattedMessages = messages
+                    .map((message: ActionExample) => {
+                        let messageString = `${message.user}: ${message.content.text}`;
+                        exampleNames.forEach((name, index) => {
+                            const placeholder = `{{user${index + 1}}}`;
+                            messageString = messageString.replaceAll(
+                                placeholder,
+                                name
                             );
-                        })
-                        .join("\n");
+                        });
+                        return (
+                            messageString +
+                            (message.content.action
+                                ? ` (${message.content.action})`
+                                : "")
+                        );
+                    })
+                    .join("\n");
 
-                    return `Context:\n${formattedContext}\n\nMessages:\n${formattedMessages}\n\nOutcome:\n${formattedOutcome}`;
-                })
-                .join("\n\n");
-        })
-        .join("\n\n");
+                return `Context:\n${formattedContext}\n\nMessages:\n${formattedMessages}\n\nOutcome:\n${formattedOutcome}`;
+            })
+        ).join("\n\n");
 }
 
 /**

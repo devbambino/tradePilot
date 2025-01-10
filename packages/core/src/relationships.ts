@@ -1,6 +1,6 @@
 import { IAgentRuntime, type Relationship, type UUID } from "./types.ts";
 
-export async function createRelationship({
+export const createRelationship = async ({
     runtime,
     userA,
     userB,
@@ -8,14 +8,11 @@ export async function createRelationship({
     runtime: IAgentRuntime;
     userA: UUID;
     userB: UUID;
-}): Promise<boolean> {
-    return runtime.databaseAdapter.createRelationship({
-        userA,
-        userB,
-    });
-}
+}): Promise<boolean> => {
+    return runtime.databaseAdapter.createRelationship({ userA, userB });
+};
 
-export async function getRelationship({
+export const getRelationship = async ({
     runtime,
     userA,
     userB,
@@ -23,43 +20,30 @@ export async function getRelationship({
     runtime: IAgentRuntime;
     userA: UUID;
     userB: UUID;
-}) {
-    return runtime.databaseAdapter.getRelationship({
-        userA,
-        userB,
-    });
-}
+}): Promise<Relationship | null> => {
+    return runtime.databaseAdapter.getRelationship({ userA, userB });
+};
 
-export async function getRelationships({
+export const getRelationships = async ({
     runtime,
     userId,
 }: {
     runtime: IAgentRuntime;
     userId: UUID;
-}) {
+}): Promise<Relationship[]> => {
     return runtime.databaseAdapter.getRelationships({ userId });
-}
+};
 
-export async function formatRelationships({
+export const formatRelationships = async ({
     runtime,
     userId,
 }: {
     runtime: IAgentRuntime;
     userId: UUID;
-}) {
+}): Promise<UUID[]> => {
     const relationships = await getRelationships({ runtime, userId });
 
-    const formattedRelationships = relationships.map(
-        (relationship: Relationship) => {
-            const { userA, userB } = relationship;
-
-            if (userA === userId) {
-                return userB;
-            }
-
-            return userA;
-        }
+    return relationships.map(({ userA, userB }: Relationship) =>
+        userA === userId ? userB : userA
     );
-
-    return formattedRelationships;
-}
+};

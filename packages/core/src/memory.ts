@@ -50,27 +50,21 @@ export class MemoryManager implements IMemoryManager {
      * @throws Error if the memory content is empty
      */
     async addEmbeddingToMemory(memory: Memory): Promise<Memory> {
-        // Return early if embedding already exists
-        if (memory.embedding) {
-            return memory;
-        }
+        // Early return if embedding exists
+        if (memory.embedding) return memory;
 
-        const memoryText = memory.content.text;
+        const { text } = memory.content;
 
         // Validate memory has text content
-        if (!memoryText) {
-            throw new Error(
-                "Cannot generate embedding: Memory content is empty"
-            );
+        if (!text) {
+            throw new Error("Cannot generate embedding: Memory content is empty");
         }
 
         try {
-            // Generate embedding from text content
-            memory.embedding = await embed(this.runtime, memoryText);
+            memory.embedding = await embed(this.runtime, text);
         } catch (error) {
             elizaLogger.error("Failed to generate embedding:", error);
-            // Fallback to zero vector if embedding fails
-            memory.embedding = getEmbeddingZeroVector().slice();
+            memory.embedding = [...getEmbeddingZeroVector()]; // Using spread operator for array copy
         }
 
         return memory;
@@ -97,7 +91,7 @@ export class MemoryManager implements IMemoryManager {
         start?: number;
         end?: number;
     }): Promise<Memory[]> {
-        return await this.runtime.databaseAdapter.getMemories({
+        return this.runtime.databaseAdapter.getMemories({
             roomId,
             count,
             unique,
@@ -136,31 +130,27 @@ export class MemoryManager implements IMemoryManager {
      */
     async searchMemoriesByEmbedding(
         embedding: number[],
-        opts: {
+        {
+            match_threshold = defaultMatchThreshold,
+            count = defaultMatchCount,
+            roomId,
+            unique,
+        }: {
             match_threshold?: number;
             count?: number;
             roomId: UUID;
             unique?: boolean;
         }
     ): Promise<Memory[]> {
-        const {
-            match_threshold = defaultMatchThreshold,
-            count = defaultMatchCount,
-            roomId,
-            unique,
-        } = opts;
-
-        const result = await this.runtime.databaseAdapter.searchMemories({
+        return this.runtime.databaseAdapter.searchMemories({
             tableName: this.tableName,
             roomId,
             agentId: this.runtime.agentId,
-            embedding: embedding,
-            match_threshold: match_threshold,
+            embedding,
+            match_threshold,
             match_count: count,
-            unique: !!unique,
+            unique: Boolean(unique),
         });
-
-        return result;
     }
 
     /**
@@ -170,23 +160,16 @@ export class MemoryManager implements IMemoryManager {
      * @returns A Promise that resolves when the operation completes.
      */
     async createMemory(memory: Memory, unique = false): Promise<void> {
-        // TODO: check memory.agentId == this.runtime.agentId
-
-        const existingMessage =
-            await this.runtime.databaseAdapter.getMemoryById(memory.id);
+        const existingMessage = await this.runtime.databaseAdapter.getMemoryById(memory.id);
 
         if (existingMessage) {
             elizaLogger.debug("Memory already exists, skipping");
             return;
         }
 
-        elizaLogger.log("Creating Memory", memory.id, memory.content.text);
+        elizaLogger.log("Creating Memory", memory.id, memory?.content?.text);
 
-        await this.runtime.databaseAdapter.createMemory(
-            memory,
-            this.tableName,
-            unique
-        );
+        await this.runtime.databaseAdapter.createMemory(memory, this.tableName, unique);
     }
 
     async getMemoriesByRoomIds(params: { roomIds: UUID[] }): Promise<Memory[]> {

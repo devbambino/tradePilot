@@ -10,49 +10,44 @@ export const formatPosts = ({
     actors: Actor[];
     conversationHeader?: boolean;
 }) => {
-    // Group messages by roomId
-    const groupedMessages: { [roomId: string]: Memory[] } = {};
-    messages.forEach((message) => {
+    // Group messages by roomId using reduce
+    const groupedMessages = messages.reduce<Record<string, Memory[]>>((acc, message) => {
         if (message.roomId) {
-            if (!groupedMessages[message.roomId]) {
-                groupedMessages[message.roomId] = [];
-            }
-            groupedMessages[message.roomId].push(message);
+            acc[message.roomId] = [...(acc[message.roomId] ?? []), message];
         }
-    });
+        return acc;
+    }, {});
 
-    // Sort messages within each roomId by createdAt (oldest to newest)
+    // Sort messages within each roomId
     Object.values(groupedMessages).forEach((roomMessages) => {
         roomMessages.sort((a, b) => a.createdAt - b.createdAt);
     });
 
     // Sort rooms by the newest message's createdAt
     const sortedRooms = Object.entries(groupedMessages).sort(
-        ([, messagesA], [, messagesB]) =>
-            messagesB[messagesB.length - 1].createdAt -
-            messagesA[messagesA.length - 1].createdAt
+        ([, messagesA], [, messagesB]) => {
+            const latestB = messagesB[messagesB.length - 1].createdAt;
+            const latestA = messagesA[messagesA.length - 1].createdAt;
+            return latestB - latestA;
+        }
     );
 
     const formattedPosts = sortedRooms.map(([roomId, roomMessages]) => {
         const messageStrings = roomMessages
-            .filter((message: Memory) => message.userId)
-            .map((message: Memory) => {
-                const actor = actors.find(
-                    (actor: Actor) => actor.id === message.userId
-                );
-                const userName = actor?.name || "Unknown User";
-                const displayName = actor?.username || "unknown";
+            .filter(({ userId }) => userId)
+            .map((message) => {
+                const { id, content, createdAt, userId } = message;
+                const actor = actors.find((actor) => actor.id === userId);
+                const { name: userName = "Unknown User", username: displayName = "unknown" } = actor ?? {};
 
                 return `Name: ${userName} (@${displayName})
-ID: ${message.id}${message.content.inReplyTo ? `\nIn reply to: ${message.content.inReplyTo}` : ""}
-Date: ${formatTimestamp(message.createdAt)}
+ID: ${id}${content.inReplyTo ? `\nIn reply to: ${content.inReplyTo}` : ""}
+Date: ${formatTimestamp(createdAt)}
 Text:
-${message.content.text}`;
+${content.text}`;
             });
 
-        const header = conversationHeader
-            ? `Conversation: ${roomId.slice(-5)}\n`
-            : "";
+        const header = conversationHeader ? `Conversation: ${roomId.slice(-5)}\n` : "";
         return `${header}${messageStrings.join("\n\n")}`;
     });
 

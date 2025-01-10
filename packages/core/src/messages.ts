@@ -43,12 +43,9 @@ export async function getActorDetails({
  * @returns string
  */
 export function formatActors({ actors }: { actors: Actor[] }) {
-    const actorStrings = actors.map((actor: Actor) => {
-        const header = `${actor.name}${actor.details?.tagline ? ": " + actor.details?.tagline : ""}${actor.details?.summary ? "\n" + actor.details?.summary : ""}`;
-        return header;
-    });
-    const finalActorStrings = actorStrings.join("\n");
-    return finalActorStrings;
+    return actors.map(({ name, details }) =>
+        `${name}${details?.tagline ? `: ${details.tagline}` : ''}${details?.summary ? `\n${details.summary}` : ''}`
+    ).join('\n');
 }
 
 /**
@@ -57,57 +54,48 @@ export function formatActors({ actors }: { actors: Actor[] }) {
  * @param actors - list of actors
  * @returns string
  */
-export const formatMessages = ({
-    messages,
-    actors,
-}: {
-    messages: Memory[];
-    actors: Actor[];
-}) => {
-    const messageStrings = messages
+export const formatMessages = ({ messages, actors }: { messages: Memory[]; actors: Actor[] }) => {
+    return messages
         .reverse()
-        .filter((message: Memory) => message.userId)
-        .map((message: Memory) => {
-            const messageContent = (message.content as Content).text;
-            const messageAction = (message.content as Content).action;
-            const formattedName =
-                actors.find((actor: Actor) => actor.id === message.userId)
-                    ?.name || "Unknown User";
+        .filter(({ userId }) => userId)
+        .map(({ userId, content, createdAt }) => {
+            const { text: messageContent, action: messageAction, attachments = [] } = content as Content;
 
-            const attachments = (message.content as Content).attachments;
+            const formattedName = actors.find(actor => actor.id === userId)?.name ?? 'Unknown User';
 
-            const attachmentString =
-                attachments && attachments.length > 0
-                    ? ` (Attachments: ${attachments.map((media) => `[${media.id} - ${media.title} (${media.url})]`).join(", ")})`
-                    : "";
+            const attachmentString = attachments.length
+                ? ` (Attachments: ${attachments.map(({ id, title, url }) =>
+                    `[${id} - ${title} (${url})]`).join(', ')})`
+                : '';
 
-            const timestamp = formatTimestamp(message.createdAt);
+            const timestamp = formatTimestamp(createdAt);
+            const shortId = userId.slice(-5);
 
-            const shortId = message.userId.slice(-5);
-
-            return `(${timestamp}) [${shortId}] ${formattedName}: ${messageContent}${attachmentString}${messageAction && messageAction !== "null" ? ` (${messageAction})` : ""}`;
+            return `(${timestamp}) [${shortId}] ${formattedName}: ${messageContent}${attachmentString}${messageAction && messageAction !== 'null' ? ` (${messageAction})` : ''}`;
         })
-        .join("\n");
-    return messageStrings;
+        .join('\n');
 };
 
 export const formatTimestamp = (messageDate: number) => {
     const now = new Date();
     const diff = now.getTime() - messageDate;
-
     const absDiff = Math.abs(diff);
-    const seconds = Math.floor(absDiff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
 
-    if (absDiff < 60000) {
-        return "just now";
-    } else if (minutes < 60) {
-        return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-    } else if (hours < 24) {
-        return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-    } else {
-        return `${days} day${days !== 1 ? "s" : ""} ago`;
-    }
+    const times = {
+        minute: 60 * 1000,
+        hour: 60 * 60 * 1000,
+        day: 24 * 60 * 60 * 1000
+    };
+
+    if (absDiff < times.minute) return 'just now';
+
+    const units = {
+        minutes: Math.floor(absDiff / times.minute),
+        hours: Math.floor(absDiff / times.hour),
+        days: Math.floor(absDiff / times.day)
+    };
+
+    if (units.minutes < 60) return `${units.minutes} minute${units.minutes !== 1 ? 's' : ''} ago`;
+    if (units.hours < 24) return `${units.hours} hour${units.hours !== 1 ? 's' : ''} ago`;
+    return `${units.days} day${units.days !== 1 ? 's' : ''} ago`;
 };

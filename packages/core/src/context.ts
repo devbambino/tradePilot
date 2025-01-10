@@ -52,10 +52,7 @@ export const composeContext = ({
     }
 
     // @ts-expect-error match isn't working as expected
-    const out = templateStr.replace(/{{\w+}}/g, (match) => {
-        const key = match.replace(/{{|}}/g, "");
-        return state[key] ?? "";
-    });
+    const out = template.replace(/{{(\w+)}}/g, (_, key) => state[key] ?? "");
     return out;
 };
 
