@@ -1,0 +1,38 @@
+{
+  "tech": [
+    {
+      "url": "https://your-domain.com/tech/image1.jpg",
+      "category": "tech",
+      "tags": ["technology", "innovation"]
+    },
+    {
+      "url": "https://your-domain.com/tech/image2.jpg",
+      "category": "tech",
+      "tags": ["coding", "development"]
+    }
+  ],
+  "nature": [
+    {
+      "url": "https://your-domain.com/nature/image1.jpg",
+      "category": "nature",
+      "tags": ["landscape", "mountains"]
+    },
+    {
+      "url": "https://your-domain.com/nature/image2.jpg",
+      "category": "nature",
+      "tags": ["ocean", "sunset"]
+    }
+  ],
+  "business": [
+    {
+      "url": "https://your-domain.com/business/image1.jpg",
+      "category": "business",
+      "tags": ["meeting", "office"]
+    },
+    {
+      "url": "https://your-domain.com/business/image2.jpg",
+      "category": "business",
+      "tags": ["startup", "technology"]
+    }
+  ]
+}

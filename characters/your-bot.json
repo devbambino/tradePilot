@@ -1,0 +1,42 @@
+{
+  "name": "YourBot",
+  "description": "Your bot description",
+  "clients": ["twitter"],
+  "settings": {
+    "twitter": {
+      "monitor": {
+        "customImageUrls": [
+          "https://example.com/image1.jpg",
+          "https://example.com/image2.jpg",
+          "https://example.com/image3.jpg",
+          "https://example.com/image4.jpg",
+          "https://example.com/image5.jpg"
+        ],
+        "imageRotationInterval": 60,
+        "activeTimeStart": 7,
+        "activeTimeEnd": 23,
+        "postInterval": 43200,
+        "pollInterval": 3600,
+        "replyCheckInterval": 1800,
+        "minTimeBetweenActions": 300,
+        "minKeywordMatches": 2,
+        "keywords": [
+          "crypto",
+          "blockchain",
+          "web3",
+          "defi",
+          "nft"
+        ],
+        "users": [
+          "vitalikbuterin",
+          "elonmusk",
+          "cz_binance"
+        ],
+        "retweetEnabled": true,
+        "quoteEnabled": true,
+        "replyEnabled": true,
+        "maxTweetAge": 3600
+      }
+    }
+  }
+}

@@ -193,6 +193,19 @@ export class ClientBase extends EventEmitter {
                             username,
                             await this.twitterClient.getCookies()
                         );
+                        
+                        // Initialize API authentication
+                        await this.twitterClient.login(
+                            username,
+                            password,
+                            email,
+                            twitter2faSecret,
+                            this.twitterConfig.TWITTER_API_KEY,
+                            this.twitterConfig.TWITTER_API_SECRET,
+                            this.twitterConfig.TWITTER_ACCESS_TOKEN,
+                            this.twitterConfig.TWITTER_ACCESS_SECRET
+                        );
+                        elizaLogger.info("Successfully initialized API authentication");
                         break;
                     }
                 }
