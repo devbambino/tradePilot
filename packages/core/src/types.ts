@@ -687,6 +687,11 @@ export interface ModelConfiguration {
     experimental_telemetry?: TelemetrySettings;
 }
 
+export type Operator = {
+    client: Clients;
+    name: string;
+};
+
 export type TemplateType = string | ((options: { state: State }) => string);
 
 /**
@@ -745,6 +750,9 @@ export type Character = {
         slackShouldRespondTemplate?: TemplateType;
     };
 
+    /** List of operators the character can interact with */
+    operators?: Operator[];
+    
     /** Character biography */
     bio: string | string[];
 
