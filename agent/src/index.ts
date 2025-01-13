@@ -56,7 +56,6 @@ import {
     webhookPlugin,
 } from "@elizaos/plugin-coinbase";
 import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
-import { coingeckoPlugin } from "@elizaos/plugin-coingecko";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
@@ -69,6 +68,7 @@ import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
 import { lensPlugin } from "@elizaos/plugin-lensNetwork";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
+import { nillionPlugin } from "@elizaos/plugin-nillion";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { obsidianPlugin } from "@elizaos/plugin-obsidian";
@@ -871,14 +871,21 @@ export async function createAgent(
                 ? artheraPlugin
                 : null,
             getSecret(character, "ALLORA_API_KEY") ? alloraPlugin : null,
-            getSecret(character, "HYPERLIQUID_PRIVATE_KEY")
-                ? hyperliquidPlugin
-                : null,
-            getSecret(character, "HYPERLIQUID_TESTNET")
+            (getSecret(character, "HYPERLIQUID_PRIVATE_KEY") || 
+            getSecret(character, "HYPERLIQUID_TESTNET"))
                 ? hyperliquidPlugin
                 : null,
             getSecret(character, "AKASH_MNEMONIC") &&
             getSecret(character, "AKASH_WALLET_ADDRESS")
+                    ? akashPlugin
+                    : null,
+                    getSecret(character, "NILLION_NILDB_URLS") &&
+                    getSecret(character, "NILLION_NILDB_NODE_IDS") &&
+                    getSecret(character, "NILLION_NILDB_NODE_JWTS") &&
+                    getSecret(character, "NILLION_NILDB_ORG_DID") &&
+                    getSecret(character, "NILLION_NILDB_SCHEMA_ID")
+                        ? nillionPlugin
+                        : null,
                 ? akashPlugin
                 : null,
             getSecret(character, "QUAI_PRIVATE_KEY") ? quaiPlugin : null,
