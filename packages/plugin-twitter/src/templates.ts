@@ -21,4 +21,19 @@ Generate a tweet that:
 
 Generate only the tweet text, no other commentary.
 
-Return the tweet in JSON format like: {"text": "your tweet here"}`;
+Return the tweet in JSON format like: {"text": "your tweet here"}
+Very Important: do not use hashtags or emojis!
+
+Generate only the tweet text, no other commentary.`;
+
+export const followTemplate = `
+# Recent interactions between {{agentName}} and other users:
+{{recentPostInteractions}}
+
+# Context
+{{recentMessages}}
+
+Task: Find the twitter / X username the {{agentName}} should follow based on the recent interactions and context.
+Only return the username, nothing else include the @ symbol.
+example: @elonmusk
+`;

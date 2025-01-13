@@ -11,3 +11,7 @@ export const TweetSchema = z.object({
 export const isTweetContent = (obj: any): obj is TweetContent => {
     return TweetSchema.safeParse(obj).success;
 };
+
+export const isFollowContent = (obj: any) => {
+    return typeof obj === "string" && obj.startsWith("@");
+};
