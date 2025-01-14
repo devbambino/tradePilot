@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey } from "viem/accounts";
 import {
-    Account,
     Address,
     Chain,
     encodeFunctionData,
@@ -21,8 +20,8 @@ import { WalletProvider } from "../providers/wallet";
 import governorArtifacts from "../contracts/artifacts/OZGovernor.json";
 import voteTokenArtifacts from "../contracts/artifacts/VoteToken.json";
 import timelockArtifacts from "../contracts/artifacts/TimelockController.json";
-import { OZGovernor } from "../contracts/types/OZGovernor";
-import { VoteToken } from "../contracts/types/VoteToken";
+//import { OZGovernor } from "../contracts/types/OZGovernor";
+//import { VoteToken } from "../contracts/types/VoteToken";
 import { QueueAction } from "../actions/gov-queue";
 import { Proposal } from "../types";
 import { ExecuteAction } from "../actions/gov-execute";
@@ -55,7 +54,7 @@ export const buildProposal = (
 };
 
 describe("Vote Action", () => {
-    let alice: Address = "0xa1Ce000000000000000000000000000000000000";
+    const alice: Address = "0xa1Ce000000000000000000000000000000000000";
     let wp: WalletProvider;
     let wc: WalletClient;
     let tc: TestClient;
@@ -144,7 +143,7 @@ describe("Vote Action", () => {
         it("should initialize with wallet provider", () => {
             const va = new VoteAction(wp);
 
-            expect(va).to.toBeDefined();
+            expect(va).toBeDefined();
         });
     });
     describe("Vote", () => {
@@ -310,7 +309,7 @@ describe("Vote Action", () => {
             const queued = await timelock.read.isOperationPending([
                 timelockProposalId,
             ]);
-            expect(queued).to.be.true;
+            expect(queued).toBeTruthy();
         });
 
         it("Executes a proposal", async () => {
@@ -341,10 +340,6 @@ describe("Vote Action", () => {
                 description: proposal.description,
             });
 
-            const descriptionHash = keccak256(
-                stringToHex(proposal.description)
-            );
-
             const aliceBalance = await voteToken.read.balanceOf([alice]);
             const timelockBalance = await voteToken.read.balanceOf([
                 timelockAddress,
@@ -373,7 +368,7 @@ describe("Vote Action", () => {
 });
 
 const prepareChains = () => {
-    let customChains: Record<string, Chain> = {};
+    const customChains: Record<string, Chain> = {};
     const chainNames = ["hardhat"];
     chainNames.forEach(
         (chain) =>
@@ -396,7 +391,7 @@ const getProposalId = (logs: any) => {
                 topics: log.topics,
             });
             return event.eventName === "ProposalCreated";
-        } catch (error) {
+        } catch {
             return false;
         }
     });

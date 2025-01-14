@@ -1,8 +1,8 @@
 import { IAgentRuntime } from "@elizaos/core";
 import { z } from 'zod';
 import { ethers } from 'ethers';
-import { bech32 } from 'bech32';
-import bs58 from 'bs58';
+//import { bech32 } from 'bech32';
+//import bs58 from 'bs58';
 import {SquidToken, XChainSwapContent} from "../types";
 
 export function convertToWei(amount: string | number, token: SquidToken): string {
@@ -55,6 +55,7 @@ const isValidEvmPrivateKey = (key: string): boolean => {
     return /^[0-9a-fA-F]{64}$/.test(cleanedKey);
 };
 
+/*
 const isValidSolanaAddress = (address: string): boolean => {
     try {
         const decoded = bs58.decode(address);
@@ -80,6 +81,7 @@ const isValidCosmosAddress = (address: string): boolean => {
 const isValidCosmosPrivateKey = (key: string): boolean => {
     return /^[0-9a-fA-F]{64}$/.test(key);
 };
+*/
 
 export const squidRouterEnvSchema = z
     .object({

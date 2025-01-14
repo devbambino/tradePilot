@@ -1,4 +1,4 @@
-import type { Token } from "@lifi/types";
+//import type { Token } from "@lifi/types";
 import type {
     Address,
     Hash,
@@ -26,5 +26,5 @@ export interface UnstakeParams {
     amount: string | number;
 }
 
-export interface WithdrawParams {
-}
+//export interface WithdrawParams {
+//}
