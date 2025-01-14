@@ -21,6 +21,7 @@
         "docker:start": "bash ./scripts/docker.sh start",
         "docker": "pnpm docker:build && pnpm docker:run && pnpm docker:bash",
         "test": "bash ./scripts/test.sh",
+        "upknowledge": "node ./scripts/update-new-knowledge.js",
         "smokeTests": "bash ./scripts/smokeTests.sh",
         "integrationTests": "bash ./scripts/integrationTests.sh"
     },

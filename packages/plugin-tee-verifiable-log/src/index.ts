@@ -24,6 +24,7 @@ export class VerifiableLogService extends Service {
     private verifiableLogProvider: VerifiableLogProvider;
     private verifiableDAO: VerifiableDAO;
 
+    private teeEndpoint: string;
     private teeMode: string;
     private vlogOpen: boolean = false;
 
@@ -31,6 +32,9 @@ export class VerifiableLogService extends Service {
     async initialize(runtime: IAgentRuntime): Promise<void> {
         if (runtime.databaseAdapter.db === null) {
             throw new Error("Database adapter is not initialized.");
+        }
+        if (runtime.getSetting("DSTACK_SIMULATOR_ENDPOINT") === null) {
+            throw new Error("DSTACK_SIMULATOR_ENDPOINT is not set.");
         }
         if (runtime.getSetting("TEE_MODE") === null) {
             throw new Error("TEE_MODE is not set.");
@@ -49,6 +53,11 @@ export class VerifiableLogService extends Service {
             this.verifiableDAO,
             this.teeMode
         );
+        this.teeEndpoint = runtime.getSetting("DSTACK_SIMULATOR_ENDPOINT");
+        const value = runtime.getSetting("VLOG");
+        const truthyValues = ["yes", "true", "YES", "TRUE", "Yes", "True", "1"];
+        this.vlogOpen = truthyValues.includes(value.toLowerCase());
+
         const isOK = await this.verifiableLogProvider.registerAgent(
             { agentId: runtime?.agentId, agentName: runtime?.character?.name },
             this.teeMode

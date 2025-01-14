@@ -1,17 +1,21 @@
 import { Tweet } from "agent-twitter-client";
 import {
     composeContext,
+    elizaLogger,
     generateText,
     getEmbeddingZeroVector,
     IAgentRuntime,
     ModelClass,
     stringToUuid,
+    ServiceType,
     TemplateType,
     UUID,
     truncateToCompleteSentence,
 } from "@elizaos/core";
 import { elizaLogger } from "@elizaos/core";
 import { ClientBase } from "./base.ts";
+import { genImage } from "./utils.ts";
+import { VerifiableLogService } from "@elizaos/plugin-tee-verifiable-log";
 import { postActionResponseFooter } from "@elizaos/core";
 import { generateTweetActions } from "@elizaos/core";
 import { IImageDescriptionService, ServiceType } from "@elizaos/core";
@@ -561,468 +565,53 @@ export class TwitterPostClient {
             }
 
             try {
-                if (this.approvalRequired) {
-                    // Send for approval instead of posting directly
-                    elizaLogger.log(
-                        `Sending Tweet For Approval:\n ${cleanedContent}`
-                    );
-                    await this.sendForApproval(
-                        cleanedContent,
-                        roomId,
-                        newTweetContent
-                    );
-                    elizaLogger.log("Tweet sent for approval");
-                } else {
-                    elizaLogger.log(`Posting new tweet:\n ${cleanedContent}`);
-                    this.postTweet(
-                        this.runtime,
-                        this.client,
-                        cleanedContent,
-                        roomId,
-                        newTweetContent,
-                        this.twitterUsername
-                    );
+                elizaLogger.log(`Posting new tweet:\n ${content}`);
+
+                const result = await this.client.requestQueue.add(
+                    async () =>
+                        await this.client.twitterClient.sendTweet(content)
+                );
+                const body = await result.json();
+                if (!body?.data?.create_tweet?.tweet_results?.result) {
+                    console.error("Error sending tweet; Bad response:", body);
+                    return;
                 }
-            } catch (error) {
-                elizaLogger.error("Error sending tweet:", error);
-            }
-        } catch (error) {
-            elizaLogger.error("Error generating new tweet:", error);
-        }
-    }
+                const tweetResult = body.data.create_tweet.tweet_results.result;
 
-    private async generateTweetContent(
-        tweetState: any,
-        options?: {
-            template?: TemplateType;
-            context?: string;
-        }
-    ): Promise<string> {
-        const context = composeContext({
-            state: tweetState,
-            template:
-                options?.template ||
-                this.runtime.character.templates?.twitterPostTemplate ||
-                twitterPostTemplate,
-        });
+                const tweet = {
+                    id: tweetResult.rest_id,
+                    name: this.client.profile.screenName,
+                    username: this.client.profile.username,
+                    text: tweetResult.legacy.full_text,
+                    conversationId: tweetResult.legacy.conversation_id_str,
+                    createdAt: tweetResult.legacy.created_at,
+                    timestamp: new Date(
+                        tweetResult.legacy.created_at
+                    ).getTime(),
+                    userId: this.client.profile.id,
+                    inReplyToStatusId:
+                        tweetResult.legacy.in_reply_to_status_id_str,
+                    permanentUrl: `https://twitter.com/${this.runtime.getSetting("TWITTER_USERNAME")}/status/${tweetResult.rest_id}`,
+                    hashtags: [],
+                    mentions: [],
+                    photos: [],
+                    thread: [],
+                    urls: [],
+                    videos: [],
+                } as Tweet;
 
-        const response = await generateText({
-            runtime: this.runtime,
-            context: options?.context || context,
-            modelClass: ModelClass.SMALL,
-        });
-        elizaLogger.debug("generate tweet content response:\n" + response);
-
-        // First clean up any markdown and newlines
-        const cleanedResponse = response
-            .replace(/```json\s*/g, "") // Remove ```json
-            .replace(/```\s*/g, "") // Remove any remaining ```
-            .replaceAll(/\\n/g, "\n")
-            .trim();
-
-        // Try to parse as JSON first
-        try {
-            const jsonResponse = JSON.parse(cleanedResponse);
-            if (jsonResponse.text) {
-                return this.trimTweetLength(jsonResponse.text);
-            }
-            if (typeof jsonResponse === "object") {
-                const possibleContent =
-                    jsonResponse.content ||
-                    jsonResponse.message ||
-                    jsonResponse.response;
-                if (possibleContent) {
-                    return this.trimTweetLength(possibleContent);
-                }
-            }
-        } catch (error) {
-            error.linted = true; // make linter happy since catch needs a variable
-
-            // If JSON parsing fails, treat as plain text
-            elizaLogger.debug("Response is not JSON, treating as plain text");
-        }
-
-        // If not JSON or no valid content found, clean the raw text
-        return this.trimTweetLength(cleanedResponse);
-    }
-
-    // Helper method to ensure tweet length compliance
-    private trimTweetLength(text: string, maxLength: number = 280): string {
-        if (text.length <= maxLength) return text;
-
-        // Try to cut at last sentence
-        const lastSentence = text.slice(0, maxLength).lastIndexOf(".");
-        if (lastSentence > 0) {
-            return text.slice(0, lastSentence + 1).trim();
-        }
-
-        // Fallback to word boundary
-        return (
-            text.slice(0, text.lastIndexOf(" ", maxLength - 3)).trim() + "..."
-        );
-    }
-
-    /**
-     * Processes tweet actions (likes, retweets, quotes, replies). If isDryRun is true,
-     * only simulates and logs actions without making API calls.
-     */
-    private async processTweetActions() {
-        if (this.isProcessing) {
-            elizaLogger.log("Already processing tweet actions, skipping");
-            return null;
-        }
-
-        try {
-            this.isProcessing = true;
-            this.lastProcessTime = Date.now();
-
-            elizaLogger.log("Processing tweet actions");
-
-            await this.runtime.ensureUserExists(
-                this.runtime.agentId,
-                this.twitterUsername,
-                this.runtime.character.name,
-                "twitter"
-            );
-
-            const timelines = await this.client.fetchTimelineForActions(
-                MAX_TIMELINES_TO_FETCH
-            );
-            const maxActionsProcessing =
-                this.client.twitterConfig.MAX_ACTIONS_PROCESSING;
-            const processedTimelines = [];
-
-            for (const tweet of timelines) {
-                try {
-                    // Skip if we've already processed this tweet
-                    const memory =
-                        await this.runtime.messageManager.getMemoryById(
-                            stringToUuid(tweet.id + "-" + this.runtime.agentId)
-                        );
-                    if (memory) {
-                        elizaLogger.log(
-                            `Already processed tweet ID: ${tweet.id}`
-                        );
-                        continue;
+                await this.runtime.cacheManager.set(
+                    `twitter/${this.client.profile.username}/lastPost`,
+                    {
+                        id: tweet.id,
+                        timestamp: Date.now(),
                     }
+                );
 
-                    const roomId = stringToUuid(
-                        tweet.conversationId + "-" + this.runtime.agentId
-                    );
+                await this.client.cacheTweet(tweet);
 
-                    const tweetState = await this.runtime.composeState(
-                        {
-                            userId: this.runtime.agentId,
-                            roomId,
-                            agentId: this.runtime.agentId,
-                            content: { text: "", action: "" },
-                        },
-                        {
-                            twitterUserName: this.twitterUsername,
-                            currentTweet: `ID: ${tweet.id}\nFrom: ${tweet.name} (@${tweet.username})\nText: ${tweet.text}`,
-                        }
-                    );
+                elizaLogger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
 
-                    const actionContext = composeContext({
-                        state: tweetState,
-                        template:
-                            this.runtime.character.templates
-                                ?.twitterActionTemplate ||
-                            twitterActionTemplate,
-                    });
-
-                    const actionResponse = await generateTweetActions({
-                        runtime: this.runtime,
-                        context: actionContext,
-                        modelClass: ModelClass.SMALL,
-                    });
-
-                    if (!actionResponse) {
-                        elizaLogger.log(
-                            `No valid actions generated for tweet ${tweet.id}`
-                        );
-                        continue;
-                    }
-                    processedTimelines.push({
-                        tweet: tweet,
-                        actionResponse: actionResponse,
-                        tweetState: tweetState,
-                        roomId: roomId,
-                    });
-                } catch (error) {
-                    elizaLogger.error(
-                        `Error processing tweet ${tweet.id}:`,
-                        error
-                    );
-                    continue;
-                }
-            }
-
-            const sortProcessedTimeline = (arr: typeof processedTimelines) => {
-                return arr.sort((a, b) => {
-                    // Count the number of true values in the actionResponse object
-                    const countTrue = (obj: typeof a.actionResponse) =>
-                        Object.values(obj).filter(Boolean).length;
-
-                    const countA = countTrue(a.actionResponse);
-                    const countB = countTrue(b.actionResponse);
-
-                    // Primary sort by number of true values
-                    if (countA !== countB) {
-                        return countB - countA;
-                    }
-
-                    // Secondary sort by the "like" property
-                    if (a.actionResponse.like !== b.actionResponse.like) {
-                        return a.actionResponse.like ? -1 : 1;
-                    }
-
-                    // Tertiary sort keeps the remaining objects with equal weight
-                    return 0;
-                });
-            };
-            // Sort the timeline based on the action decision score,
-            // then slice the results according to the environment variable to limit the number of actions per cycle.
-            const sortedTimelines = sortProcessedTimeline(
-                processedTimelines
-            ).slice(0, maxActionsProcessing);
-
-            return this.processTimelineActions(sortedTimelines); // Return results array to indicate completion
-        } catch (error) {
-            elizaLogger.error("Error in processTweetActions:", error);
-            throw error;
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    /**
-     * Processes a list of timelines by executing the corresponding tweet actions.
-     * Each timeline includes the tweet, action response, tweet state, and room context.
-     * Results are returned for tracking completed actions.
-     *
-     * @param timelines - Array of objects containing tweet details, action responses, and state information.
-     * @returns A promise that resolves to an array of results with details of executed actions.
-     */
-    private async processTimelineActions(
-        timelines: {
-            tweet: Tweet;
-            actionResponse: ActionResponse;
-            tweetState: State;
-            roomId: UUID;
-        }[]
-    ): Promise<
-        {
-            tweetId: string;
-            actionResponse: ActionResponse;
-            executedActions: string[];
-        }[]
-    > {
-        const results = [];
-        for (const timeline of timelines) {
-            const { actionResponse, tweetState, roomId, tweet } = timeline;
-            try {
-                const executedActions: string[] = [];
-                // Execute actions
-                if (actionResponse.like) {
-                    if (this.isDryRun) {
-                        elizaLogger.info(
-                            `Dry run: would have liked tweet ${tweet.id}`
-                        );
-                        executedActions.push("like (dry run)");
-                    } else {
-                        try {
-                            await this.client.twitterClient.likeTweet(tweet.id);
-                            executedActions.push("like");
-                            elizaLogger.log(`Liked tweet ${tweet.id}`);
-                        } catch (error) {
-                            elizaLogger.error(
-                                `Error liking tweet ${tweet.id}:`,
-                                error
-                            );
-                        }
-                    }
-                }
-
-                if (actionResponse.retweet) {
-                    if (this.isDryRun) {
-                        elizaLogger.info(
-                            `Dry run: would have retweeted tweet ${tweet.id}`
-                        );
-                        executedActions.push("retweet (dry run)");
-                    } else {
-                        try {
-                            await this.client.twitterClient.retweet(tweet.id);
-                            executedActions.push("retweet");
-                            elizaLogger.log(`Retweeted tweet ${tweet.id}`);
-                        } catch (error) {
-                            elizaLogger.error(
-                                `Error retweeting tweet ${tweet.id}:`,
-                                error
-                            );
-                        }
-                    }
-                }
-
-                if (actionResponse.quote) {
-                    try {
-                        // Build conversation thread for context
-                        const thread = await buildConversationThread(
-                            tweet,
-                            this.client
-                        );
-                        const formattedConversation = thread
-                            .map(
-                                (t) =>
-                                    `@${t.username} (${new Date(t.timestamp * 1000).toLocaleString()}): ${t.text}`
-                            )
-                            .join("\n\n");
-
-                        // Generate image descriptions if present
-                        const imageDescriptions = [];
-                        if (tweet.photos?.length > 0) {
-                            elizaLogger.log(
-                                "Processing images in tweet for context"
-                            );
-                            for (const photo of tweet.photos) {
-                                const description = await this.runtime
-                                    .getService<IImageDescriptionService>(
-                                        ServiceType.IMAGE_DESCRIPTION
-                                    )
-                                    .describeImage(photo.url);
-                                imageDescriptions.push(description);
-                            }
-                        }
-
-                        // Handle quoted tweet if present
-                        let quotedContent = "";
-                        if (tweet.quotedStatusId) {
-                            try {
-                                const quotedTweet =
-                                    await this.client.twitterClient.getTweet(
-                                        tweet.quotedStatusId
-                                    );
-                                if (quotedTweet) {
-                                    quotedContent = `\nQuoted Tweet from @${quotedTweet.username}:\n${quotedTweet.text}`;
-                                }
-                            } catch (error) {
-                                elizaLogger.error(
-                                    "Error fetching quoted tweet:",
-                                    error
-                                );
-                            }
-                        }
-
-                        // Compose rich state with all context
-                        const enrichedState = await this.runtime.composeState(
-                            {
-                                userId: this.runtime.agentId,
-                                roomId: stringToUuid(
-                                    tweet.conversationId +
-                                        "-" +
-                                        this.runtime.agentId
-                                ),
-                                agentId: this.runtime.agentId,
-                                content: {
-                                    text: tweet.text,
-                                    action: "QUOTE",
-                                },
-                            },
-                            {
-                                twitterUserName: this.twitterUsername,
-                                currentPost: `From @${tweet.username}: ${tweet.text}`,
-                                formattedConversation,
-                                imageContext:
-                                    imageDescriptions.length > 0
-                                        ? `\nImages in Tweet:\n${imageDescriptions.map((desc, i) => `Image ${i + 1}: ${desc}`).join("\n")}`
-                                        : "",
-                                quotedContent,
-                            }
-                        );
-
-                        const quoteContent = await this.generateTweetContent(
-                            enrichedState,
-                            {
-                                template:
-                                    this.runtime.character.templates
-                                        ?.twitterMessageHandlerTemplate ||
-                                    twitterMessageHandlerTemplate,
-                            }
-                        );
-
-                        if (!quoteContent) {
-                            elizaLogger.error(
-                                "Failed to generate valid quote tweet content"
-                            );
-                            return;
-                        }
-
-                        elizaLogger.log(
-                            "Generated quote tweet content:",
-                            quoteContent
-                        );
-                        // Check for dry run mode
-                        if (this.isDryRun) {
-                            elizaLogger.info(
-                                `Dry run: A quote tweet for tweet ID ${tweet.id} would have been posted with the following content: "${quoteContent}".`
-                            );
-                            executedActions.push("quote (dry run)");
-                        } else {
-                            // Send the tweet through request queue
-                            const result = await this.client.requestQueue.add(
-                                async () =>
-                                    await this.client.twitterClient.sendQuoteTweet(
-                                        quoteContent,
-                                        tweet.id
-                                    )
-                            );
-
-                            const body = await result.json();
-
-                            if (
-                                body?.data?.create_tweet?.tweet_results?.result
-                            ) {
-                                elizaLogger.log(
-                                    "Successfully posted quote tweet"
-                                );
-                                executedActions.push("quote");
-
-                                // Cache generation context for debugging
-                                await this.runtime.cacheManager.set(
-                                    `twitter/quote_generation_${tweet.id}.txt`,
-                                    `Context:\n${enrichedState}\n\nGenerated Quote:\n${quoteContent}`
-                                );
-                            } else {
-                                elizaLogger.error(
-                                    "Quote tweet creation failed:",
-                                    body
-                                );
-                            }
-                        }
-                    } catch (error) {
-                        elizaLogger.error(
-                            "Error in quote tweet generation:",
-                            error
-                        );
-                    }
-                }
-
-                if (actionResponse.reply) {
-                    try {
-                        await this.handleTextOnlyReply(
-                            tweet,
-                            tweetState,
-                            executedActions
-                        );
-                    } catch (error) {
-                        elizaLogger.error(
-                            `Error replying to tweet ${tweet.id}:`,
-                            error
-                        );
-                    }
-                }
-
-                // Add these checks before creating memory
                 await this.runtime.ensureRoomExists(roomId);
                 await this.runtime.ensureUserExists(
                     stringToUuid(tweet.userId),
@@ -1035,28 +624,18 @@ export class TwitterPostClient {
                     roomId
                 );
 
-                if (!this.isDryRun) {
-                    // Then create the memory
-                    await this.runtime.messageManager.createMemory({
-                        id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
-                        userId: stringToUuid(tweet.userId),
-                        content: {
-                            text: tweet.text,
-                            url: tweet.permanentUrl,
-                            source: "twitter",
-                            action: executedActions.join(","),
-                        },
-                        agentId: this.runtime.agentId,
-                        roomId,
-                        embedding: getEmbeddingZeroVector(),
-                        createdAt: tweet.timestamp * 1000,
-                    });
-                }
-
-                results.push({
-                    tweetId: tweet.id,
-                    actionResponse: actionResponse,
-                    executedActions,
+                await this.runtime.messageManager.createMemory({
+                    id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+                    userId: this.runtime.agentId,
+                    agentId: this.runtime.agentId,
+                    content: {
+                        text: newTweetContent.trim(),
+                        url: tweet.permanentUrl,
+                        source: "twitter",
+                    },
+                    roomId,
+                    embedding: getEmbeddingZeroVector(),
+                    createdAt: tweet.timestamp,
                 });
             } catch (error) {
                 elizaLogger.error(`Error processing tweet ${tweet.id}:`, error);

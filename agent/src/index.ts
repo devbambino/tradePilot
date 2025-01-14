@@ -28,10 +28,12 @@ import {
     ICacheManager,
     IDatabaseAdapter,
     IDatabaseCacheAdapter,
+    IBlockStoreAdapter,
     ModelProviderName,
     settings,
     stringToUuid,
     validateCharacterConfig,
+    BlockStoreMsgType,
 } from "@elizaos/core";
 import { zgPlugin } from "@elizaos/plugin-0g";
 
@@ -47,6 +49,7 @@ import { artheraPlugin } from "@elizaos/plugin-arthera";
 import { availPlugin } from "@elizaos/plugin-avail";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { binancePlugin } from "@elizaos/plugin-binance";
+import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
 import {
     advancedTradePlugin,
     coinbaseCommercePlugin,
@@ -101,8 +104,6 @@ import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
-import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
-import createNFTCollectionsPlugin from "@elizaos/plugin-nft-collections";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -649,6 +650,7 @@ let nodePlugin: any | undefined;
 export async function createAgent(
     character: Character,
     db: IDatabaseAdapter,
+    blockStoreAdapter: IBlockStoreAdapter,
     cache: ICacheManager,
     token: string
 ): Promise<AgentRuntime> {
@@ -729,6 +731,7 @@ export async function createAgent(
 
     return new AgentRuntime({
         databaseAdapter: db,
+        blockStoreAdapter: blockStoreAdapter,
         token,
         modelProvider: character.modelProvider,
         evaluators: [],
@@ -736,6 +739,10 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            (getSecret(character, "DSTACK_SIMULATOR_ENDPOINT") && getSecret(character,"VLOG"))
+                ? verifiableLogPlugin
+                : null,
+            getSecret(character, "WALLET_PUBLIC_KEY") ||
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
@@ -976,6 +983,18 @@ async function startAgent(
         character.id ??= stringToUuid(character.name);
         character.username ??= character.name;
 
+        const blockStoreRecovery = process.env.BLOCKSTORE_STORE_RECOVERY;
+        const blockStoreAdapter = new BlockStoreQueue(character.id);
+        if (["0", "1", "2", "3"].includes(blockStoreRecovery)) {
+            await blockStoreAdapter.initialize();
+        }
+
+        if (blockStoreRecovery === "0") {
+            character = await blockStoreAdapter.restoreCharacter();
+        } else if (["1", "2"].includes(blockStoreRecovery)) {
+            blockStoreAdapter.enqueue(BlockStoreMsgType.character, character);
+        }
+
         const token = getTokenForProvider(character.modelProvider, character);
         const dataDir = path.join(__dirname, "../data");
 
@@ -988,18 +1007,12 @@ async function startAgent(
 
         await db.init();
 
-        const cache = initializeCache(
-            process.env.CACHE_STORE ?? CacheStore.DATABASE,
-            character,
-            "",
-            db
-        ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
-        const runtime: AgentRuntime = await createAgent(
-            character,
-            db,
-            cache,
-            token
-        );
+        if (blockStoreRecovery === "0") {
+            await blockStoreAdapter.restoreMemory(db);
+        }
+
+        const cache = intializeDbCache(character, db);
+        const runtime = createAgent(character, db, cache, token);
 
         // start services/plugins/process knowledge
         await runtime.initialize();

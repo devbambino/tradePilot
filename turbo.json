@@ -57,6 +57,14 @@
                 "@elizaos/plugin-trustdb#build"
             ]
         },
+        "@elizaos/client-twitter#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": ["@elizaos/plugin-tee-verifiable-log#build"]
+        },
+        "@elizaos/client-direct#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": ["@elizaos/plugin-tee-verifiable-log#build"]
+        },
         "eliza-docs#build": {
             "outputs": ["build/**"]
         },

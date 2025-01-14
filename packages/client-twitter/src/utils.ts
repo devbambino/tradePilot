@@ -7,6 +7,8 @@ import { elizaLogger } from "@elizaos/core";
 import { Media } from "@elizaos/core";
 import fs from "fs";
 import path from "path";
+import Heurist from "heurist";
+import axios from "axios";
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
@@ -169,7 +171,8 @@ export async function sendTweet(
     content: Content,
     roomId: UUID,
     twitterUsername: string,
-    inReplyTo: string
+    inReplyTo: string,
+    inReplyText: string
 ): Promise<Memory[]> {
     const maxTweetLength = client.twitterConfig.MAX_TWEET_LENGTH;
     const isLongTweet = maxTweetLength > 280;
@@ -179,56 +182,13 @@ export async function sendTweet(
     let previousTweetId = inReplyTo;
 
     for (const chunk of tweetChunks) {
-        let mediaData: { data: Buffer; mediaType: string }[] | undefined;
-
-        if (content.attachments && content.attachments.length > 0) {
-            mediaData = await Promise.all(
-                content.attachments.map(async (attachment: Media) => {
-                    if (/^(http|https):\/\//.test(attachment.url)) {
-                        // Handle HTTP URLs
-                        const response = await fetch(attachment.url);
-                        if (!response.ok) {
-                            throw new Error(
-                                `Failed to fetch file: ${attachment.url}`
-                            );
-                        }
-                        const mediaBuffer = Buffer.from(
-                            await response.arrayBuffer()
-                        );
-                        const mediaType = attachment.contentType;
-                        return { data: mediaBuffer, mediaType };
-                    } else if (fs.existsSync(attachment.url)) {
-                        // Handle local file paths
-                        const mediaBuffer = await fs.promises.readFile(
-                            path.resolve(attachment.url)
-                        );
-                        const mediaType = attachment.contentType;
-                        return { data: mediaBuffer, mediaType };
-                    } else {
-                        throw new Error(
-                            `File not found: ${attachment.url}. Make sure the path is correct.`
-                        );
-                    }
-                })
-            );
-        }
-
-        const cleanChunk = deduplicateMentions(chunk.trim())
-
-        const result = await client.requestQueue.add(async () =>
-            isLongTweet
-                ? client.twitterClient.sendLongTweet(
-                      cleanChunk,
-                      previousTweetId,
-                      mediaData
-                  )
-                : client.twitterClient.sendTweet(
-                      cleanChunk,
-                      previousTweetId,
-                      mediaData
-                  )
+        const result = await client.requestQueue.add(
+            async () =>
+                await client.twitterClient.sendTweet(
+                    chunk.trim(),
+                    previousTweetId
+                )
         );
-
         const body = await result.json();
         const tweetResult = isLongTweet
             ? body?.data?.notetweet_create?.tweet_results?.result
@@ -398,60 +358,4 @@ function splitSentencesAndWords(text: string, maxLength: number): string[] {
     }
 
     return chunks;
-}
-
-function deduplicateMentions(paragraph: string) {
-    // Regex to match mentions at the beginning of the string
-  const mentionRegex = /^@(\w+)(?:\s+@(\w+))*(\s+|$)/;
-
-  // Find all matches
-  const matches = paragraph.match(mentionRegex);
-
-  if (!matches) {
-    return paragraph; // If no matches, return the original string
-  }
-
-  // Extract mentions from the match groups
-  let mentions = matches.slice(0, 1)[0].trim().split(' ')
-
-  // Deduplicate mentions
-  mentions = [...new Set(mentions)];
-
-  // Reconstruct the string with deduplicated mentions
-  const uniqueMentionsString = mentions.join(' ');
-
-  // Find where the mentions end in the original string
-  const endOfMentions = paragraph.indexOf(matches[0]) + matches[0].length;
-
-  // Construct the result by combining unique mentions with the rest of the string
-  return uniqueMentionsString + ' ' + paragraph.slice(endOfMentions);
-}
-
-function restoreUrls(
-    chunks: string[],
-    placeholderMap: Map<string, string>
-): string[] {
-    return chunks.map((chunk) => {
-        // Replace all <<URL_CONSIDERER_23_>> in chunk back to original URLs using regex
-        return chunk.replace(/<<URL_CONSIDERER_23_(\d+)>>/g, (match) => {
-            const original = placeholderMap.get(match);
-            return original || match; // Return placeholder if not found (theoretically won't happen)
-        });
-    });
-}
-
-function splitParagraph(paragraph: string, maxLength: number): string[] {
-    // 1) Extract URLs and replace with placeholders
-    const { textWithPlaceholders, placeholderMap } = extractUrls(paragraph);
-
-    // 2) Use first section's logic to split by sentences first, then do secondary split
-    const splittedChunks = splitSentencesAndWords(
-        textWithPlaceholders,
-        maxLength
-    );
-
-    // 3) Replace placeholders back to original URLs
-    const restoredChunks = restoreUrls(splittedChunks, placeholderMap);
-
-    return restoredChunks;
 }

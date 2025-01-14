@@ -36,6 +36,7 @@ import {
     IMemoryManager,
     IRAGKnowledgeManager,
     IVerifiableInferenceAdapter,
+    IBlockStoreAdapter,
     KnowledgeItem,
     //RAGKnowledgeItem,
     //Media,
@@ -51,8 +52,10 @@ import {
     type Actor,
     type Evaluator,
     type Memory,
+    BlockStoreMsgType,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
+import { promises } from "node:fs";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -156,9 +159,6 @@ export class AgentRuntime implements IAgentRuntime {
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
     cacheManager: ICacheManager;
-    clients: Record<string, any>;
-
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -237,6 +237,7 @@ export class AgentRuntime implements IAgentRuntime {
         services?: Service[]; // Map of service name to service instance
         managers?: IMemoryManager[]; // Map of table name to memory manager
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
+        blockStoreAdapter: IBlockStoreAdapter;
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
         cacheManager: ICacheManager;
@@ -304,11 +305,6 @@ export class AgentRuntime implements IAgentRuntime {
         this.knowledgeManager = new MemoryManager({
             runtime: this,
             tableName: "fragments",
-        });
-
-        this.ragKnowledgeManager = new RAGKnowledgeManager({
-            runtime: this,
-            tableName: "knowledge",
         });
 
         (opts.managers ?? []).forEach((manager: IMemoryManager) => {

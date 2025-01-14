@@ -173,7 +173,7 @@ export class ClientBase extends EventEmitter {
             elizaLogger.info("Using cached cookies");
             await this.setCookiesFromArray(cachedCookies);
         }
-
+        let retries = 5; // Optional: Set a retry limit
         elizaLogger.log("Waiting for Twitter login");
         while (retries > 0) {
             try {

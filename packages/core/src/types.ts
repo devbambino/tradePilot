@@ -878,6 +878,24 @@ export type Character = {
 };
 
 /**
+ * Interface for block store queue
+ */
+export type IBlockStoreAdapter = {
+    /**
+     * Stores a value in the store with an automatically generated key.
+     * @param value - The value to store.
+     */
+    enqueue: <T>(msgType: BlockStoreMsgType, msg: T) => Promise<void>;
+};
+
+// Define the enum for blob message types
+export enum BlockStoreMsgType {
+    character = "character",
+    memory = "memory",
+    user = "user"
+}
+
+/**
  * Interface for database operations
  */
 export interface IDatabaseAdapter {
@@ -1179,6 +1197,7 @@ export interface IAgentRuntime {
     agentId: UUID;
     serverUrl: string;
     databaseAdapter: IDatabaseAdapter;
+    blockStoreAdapter: IBlockStoreAdapter;
     token: string | null;
     modelProvider: ModelProviderName;
     imageModelProvider: ModelProviderName;
@@ -1428,10 +1447,10 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
-    VERIFIABLE_LOGGING = "verifiable_logging",
     IRYS = "irys",
     TEE_LOG = "tee_log",
     GOPLUS_SECURITY = "goplus_security",
+    VERIFIABLE_LOGGING = "verifiable_logging",
 }
 
 export enum LoggingLevel {
