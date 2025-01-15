@@ -79,6 +79,7 @@ import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import createNFTCollectionsPlugin from "@elizaos/plugin-nft-collections";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
+import { aimePlugin } from "@elizaos/plugin-aime";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { obsidianPlugin } from "@elizaos/plugin-obsidian";
 import { OpacityAdapter } from "@elizaos/plugin-opacity";
@@ -803,6 +804,10 @@ export async function createAgent(
             getSecret(character, "SOLANA_PRIVATE_KEY") &&
             getSecret(character, "SOLANA_ADMIN_PRIVATE_KEY")
                 ? nftGenerationPlugin
+                : null,
+            getSecret(character, "AIME_ENDPOINT") &&
+            getSecret(character, "AIME_ONCHAIN_ADDRESS")
+                ? aimePlugin
                 : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
             getSecret(character, "COINMARKETCAP_API_KEY")
