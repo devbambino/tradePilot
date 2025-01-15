@@ -1,5 +1,7 @@
 # Use a specific Node.js version for better reproducibility
 FROM node:23.3.0-slim AS builder
+ARG CHARACTER_PATH=characters/c3po.character.json
+ENV CHARACTER_PATH=${CHARACTER_PATH}
 
 # Install pnpm globally and install necessary build tools
 RUN npm install -g pnpm@9.4.0 && \
@@ -30,6 +32,8 @@ RUN pnpm install \
 
 # Create a new stage for the final image
 FROM node:23.3.0-slim
+ARG CHARACTER_PATH
+ENV CHARACTER_PATH=${CHARACTER_PATH}
 
 # Install runtime dependencies if needed
 RUN npm install -g pnpm@9.4.0 && \
@@ -52,4 +56,4 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/characters ./characters
 
 # Set the command to run the application
-CMD ["pnpm", "start"]
+CMD ["sh", "-c", "pnpm start --non-interactive --character=${CHARACTER_PATH}"]

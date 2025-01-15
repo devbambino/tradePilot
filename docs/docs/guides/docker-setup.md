@@ -101,6 +101,17 @@ This guide provides instructions for installing and running the Eliza chatbot us
 - Character files are located in the `characters/` directory
 - Create new character files by copying and modifying existing ones
 
+## Character Management
+
+- To build a new character, run the following command:
+    ```bash
+    pnpm docker:build <character_name>
+    ```
+- To run a character, run the following command:
+    ```bash
+    pnpm docker:run <character_name>
+    ```
+
 ## Troubleshooting
 
 - If Docker container fails to start, check logs:

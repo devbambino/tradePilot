@@ -6,17 +6,27 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# check if second argument is provided
+# if not, then default to using eliza
+if [ -z "$2" ]; then
+    CHARACTER="c3po"
+else
+    CHARACTER="$2"
+fi
+
+CHARACTER_PATH="characters/$CHARACTER.character.json"
+
 # Execute the corresponding command based on the argument
 case "$1" in
     build)
-        docker build --platform linux/amd64 -t eliza .
+        docker build --platform linux/amd64 -t $CHARACTER --build-arg CHARACTER_PATH="$CHARACTER_PATH" .
         ;;
     run)
         # Ensure the container is not already running
-        if [ "$(docker ps -q -f name=eliza)" ]; then
-            echo "Container 'eliza' is already running. Stopping it first."
-            docker stop eliza
-            docker rm eliza
+        if [ "$(docker ps -q -f name=$CHARACTER)" ]; then
+            echo "Container '$CHARACTER' is already running. Stopping it first."
+            docker stop $CHARACTER
+            docker rm $CHARACTER
         fi
 
         # Define base directories to mount
@@ -66,20 +76,20 @@ case "$1" in
         CMD="$CMD -v \"$(pwd)/packages/core/types:/app/packages/core/types\""
 
         # Add container name and image
-        CMD="$CMD --name eliza eliza"
+        CMD="$CMD --name $CHARACTER $CHARACTER"
 
         # Execute the command
         eval $CMD
         ;;
     start)
-        docker start eliza
+        docker start $CHARACTER
         ;;
     bash)
         # Check if the container is running before executing bash
         if [ "$(docker ps -q -f name=eliza)" ]; then
-            docker exec -it eliza bash
+            docker exec -it $CHARACTER bash
         else
-            echo "Container 'eliza' is not running. Please start it first."
+            echo "Container '$CHARACTER' is not running. Please start it first."
             exit 1
         fi
         ;;
