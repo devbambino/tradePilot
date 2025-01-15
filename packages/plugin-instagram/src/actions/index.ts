@@ -1,0 +1,1 @@
+export { postAction } from './post';
