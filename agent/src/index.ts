@@ -87,6 +87,7 @@ import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { quaiPlugin } from "@elizaos/plugin-quai";
 import { sgxPlugin } from "@elizaos/plugin-sgx";
 import { solanaPlugin } from "@elizaos/plugin-solana";
+import { mplBubblegumPlugin } from "@elizaos/plugin-mpl-bubblegum";
 import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
 import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
@@ -786,6 +787,10 @@ export async function createAgent(
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
+                : null,
+            getSecret(character, "MPL_BUBBLEGUM_PRIVATE_KEY") &&
+            getSecret(character, "MPL_BUBBLEGUM_RPC_URL")
+                ? mplBubblegumPlugin
                 : null,
             getSecret(character, "SOLANA_PRIVATE_KEY")
                 ? solanaAgentkitPlguin
