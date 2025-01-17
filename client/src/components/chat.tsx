@@ -27,6 +27,7 @@ interface ExtraContentFields {
     user: string;
     createdAt: number;
     isLoading?: boolean;
+    isHistory?: boolean; // Indicates if the message is loaded from agent memory
 }
 
 type ContentWithUser = Content & ExtraContentFields;
@@ -39,6 +40,8 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const [roomId, setRoomId] = useState<UUID>();
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
     const queryClient = useQueryClient();
 
@@ -87,6 +90,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 text: input,
                 user: "user",
                 createdAt: Date.now(),
+                source: "direct",
                 attachments,
             },
             {
@@ -167,6 +171,53 @@ export default function Page({ agentId }: { agentId: UUID }) {
         leave: { opacity: 0, transform: "translateY(10px)" },
     });
 
+    // Load chat history
+    useEffect(() => {
+        const initChat = async () => {
+            try {
+                const generatedRoomId = await apiClient.stringToUuid(
+                    `default-room-${agentId}`
+                );
+                setRoomId(generatedRoomId);
+
+                const response = await apiClient.getAgentMemories(
+                    agentId,
+                    generatedRoomId
+                );
+
+                // Sort messages in ascending order by timestamp
+                const sortedMemories = [...response.memories].sort(
+                    (a, b) => a.createdAt! - b.createdAt!
+                );
+
+                queryClient.setQueryData(
+                    ["messages", agentId],
+                    sortedMemories.map((memory) => ({
+                        ...memory.content,
+                        user:
+                            memory.content.source === "direct"
+                                ? "user"
+                                : undefined,
+                        createdAt: memory.createdAt,
+                        isHistory: true,
+                    }))
+                );
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        initChat();
+    }, [agentId]);
+
+    if (!roomId || isLoadingHistory) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                Loading chat history...
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col w-full h-[calc(100dvh)] p-4">
             <div className="flex-1 overflow-y-auto">
@@ -193,9 +244,13 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                             isLoading={message?.isLoading}
                                         >
                                             {message?.user !== "user" ? (
-                                                <AIWriter>
-                                                    {message?.text}
-                                                </AIWriter>
+                                                message?.isHistory ? (
+                                                    message?.text
+                                                ) : (
+                                                    <AIWriter>
+                                                        {message?.text}
+                                                    </AIWriter>
+                                                )
                                             ) : (
                                                 message?.text
                                             )}

@@ -1,4 +1,4 @@
-import { type UUID, type Character } from "@elizaos/core";
+import { type UUID, type Character, Memory } from "@elizaos/core";
 
 const BASE_URL = `http://localhost:${import.meta.env.VITE_SERVER_PORT ?? 3000}`;
 
@@ -80,6 +80,14 @@ export const apiClient = {
     getAgents: () => fetcher({ url: "/agents" }),
     getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
         fetcher({ url: `/agents/${agentId}` }),
+    getAgentMemories: (
+        agentId: string,
+        roomId: string
+    ): Promise<{
+        agentId: UUID;
+        roomId: UUID;
+        memories: Memory[];
+    }> => fetcher({ url: `/agents/${agentId}/${roomId}/memories` }),
     tts: (agentId: string, text: string) =>
         fetcher({
             url: `/${agentId}/tts`,
@@ -101,5 +109,13 @@ export const apiClient = {
             method: "POST",
             body: formData,
         });
+    },
+    stringToUuid: async (value: string): Promise<UUID> => {
+        const response = await fetcher({
+            url: "/utils/string-to-uuid",
+            method: "POST",
+            body: { value },
+        });
+        return response.uuid;
     },
 };
