@@ -1,0 +1,26 @@
+{
+  "name": "stakewise-plugin",
+  "version": "1.0.0",
+  "description": "A plugin to fetch StakeWise vault data.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "start": "node dist/index.js",
+    "test1": "node tests/test1.mjs",
+    "smokeTests": "node tests/test1.mjs && node tests/test2.mjs" 
+  },
+  "dependencies": {
+    "@ai16z/eliza": "^0.1.6",
+    "axios": "^1.4.0"
+  },
+  "devDependencies": {
+    "tsup": "^6.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "type": "module" 
+}
