@@ -699,7 +699,7 @@ export class MessageManager {
                             i === 0 && replyToMessageId
                                 ? { message_id: replyToMessageId }
                                 : undefined,
-                        parse_mode: "Markdown",
+                        parse_mode: this.runtime.character.clientConfig.telegram.parseMode || undefined,
                     }
                 )) as Message.TextMessage;
 
