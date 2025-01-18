@@ -102,4 +102,10 @@ export const apiClient = {
             body: formData,
         });
     },
+    applyArchetype: (agentId: string, archetype: Character) =>
+        fetcher({
+            url: `/agents/${agentId}/set`,
+            method: "POST",
+            body: archetype,
+        }),
 };

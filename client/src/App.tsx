@@ -9,6 +9,7 @@ import Chat from "./routes/chat";
 import Overview from "./routes/overview";
 import Home from "./routes/home";
 import useVersion from "./hooks/use-version";
+import { ArchetypeSelector } from "./components/archetype-selector";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -39,6 +40,10 @@ function App() {
                                         <Route
                                             path="chat/:agentId"
                                             element={<Chat />}
+                                        />
+                                        <Route
+                                            path="settings/archetypes/:agentId"
+                                            element={<ArchetypeSelector />}
                                         />
                                         <Route
                                             path="settings/:agentId"
