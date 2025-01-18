@@ -61,6 +61,16 @@ User: "What's my wallet balance?";
 Assistant: "Your wallet contains 10.5 SUI ($42.00 USD)...";
 ```
 
+### Create and Buy Token on MovePump
+
+Create a new token on MovePump:
+
+```typescript
+// Example conversation
+User: "Create a new token called elizaOS with symbol ELIZA on MovePump and buy 1 ELIZA. Here's the token info: Description: Autonomous AI agents for everyone Image: https://api.movepump.com/uploads/eliza_689d10b870.jpeg Website: https://elizaos.ai Twitter: https://x.com/ai16zdao Telegram: https://t.me";
+Assistant: "Token elizaOS (ELIZA) created successfully on MovePump!\nModule ID: 0xf94928f8da383439908b5d0ae32dfaf51ff74a95f9ef46f9d1b97b007f5d68b4\nTransaction: 3G7PqwkDtCtZNvwXSM4cb7RVJPuZvLYycotf8P4rQ8L6\nView at: https://movepump.com/token/0xf94928f8da383439908b5d0ae32dfaf51ff74a95f9ef46f9d1b97b007f5d68b4::eliza::ELIZA";
+```
+
 ## API Reference
 
 ### Actions
@@ -69,6 +79,7 @@ Assistant: "Your wallet contains 10.5 SUI ($42.00 USD)...";
 - `TRANSFER_TOKEN`: Alias for SEND_TOKEN
 - `SEND_SUI`: Alias for SEND_TOKEN
 - `PAY`: Alias for SEND_TOKEN
+- `CREATE_AND_BUY_TOKEN`: Create and deploy a new token on MovePump (Mainnet only)
 
 ### Providers
 
@@ -91,6 +102,8 @@ npm run test
 ## Dependencies
 
 - `@mysten/sui`: Core Sui blockchain interaction library
+- `@mysten/move-bytecode-template`: Allows updating a pre-compiled bytecode
+- `@mysten/bcs`: Small and lightweight library implements Binary Canonical Serialization (BCS) in TypeScript
 - `bignumber.js`: Precise number handling
 - `node-cache`: Caching implementation
 - Other standard dependencies listed in package.json
