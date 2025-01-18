@@ -15,12 +15,11 @@ import { z } from "zod";
 
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_DECIMALS } from "@mysten/sui/utils";
+import { isValidSuiNSName, SUI_DECIMALS } from "@mysten/sui/utils";
 
 import { walletProvider } from "../providers/wallet";
-import { parseAccount } from "../utils";
-
-type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
+import { parseAccount, getSuiAddress } from "../utils";
+import { SuiNetwork } from "../types";
 
 export interface TransferContent extends Content {
     recipient: string;
@@ -145,6 +144,22 @@ export default {
                 url: getFullnodeUrl(network as SuiNetwork),
             });
 
+            const recipientAddress = await getSuiAddress(
+                transferContent.recipient,
+                suiClient
+            );
+            if (!recipientAddress) {
+                console.error(
+                    "Invalid recipient address for TRANSFER_TOKEN action."
+                );
+                if (callback) {
+                    callback({
+                        text: "Invalid recipient address provided.",
+                        content: { error: "Invalid recipient address" },
+                    });
+                }
+                return false;
+            }
             const adjustedAmount = BigInt(
                 Number(transferContent.amount) * Math.pow(10, SUI_DECIMALS)
             );
@@ -153,7 +168,8 @@ export default {
             );
             const tx = new Transaction();
             const [coin] = tx.splitCoins(tx.gas, [adjustedAmount]);
-            tx.transferObjects([coin], transferContent.recipient);
+
+            tx.transferObjects([coin], recipientAddress);
             const executedTransaction =
                 await suiClient.signAndExecuteTransaction({
                     signer: suiAccount,
@@ -163,13 +179,16 @@ export default {
             console.log("Transfer successful:", executedTransaction.digest);
 
             if (callback) {
+                const recipient = isValidSuiNSName(transferContent.recipient)
+                    ? `${transferContent.recipient}(${recipientAddress})`
+                    : recipientAddress;
                 callback({
-                    text: `Successfully transferred ${transferContent.amount} SUI to ${transferContent.recipient}, Transaction: ${executedTransaction.digest}`,
+                    text: `Successfully transferred ${transferContent.amount} SUI to ${recipient}, Transaction: ${executedTransaction.digest}`,
                     content: {
                         success: true,
                         hash: executedTransaction.digest,
                         amount: transferContent.amount,
-                        recipient: transferContent.recipient,
+                        recipient: recipientAddress,
                     },
                 });
             }
@@ -206,6 +225,27 @@ export default {
                 user: "{{user2}}",
                 content: {
                     text: "Successfully sent 1 SUI tokens to 0x4f2e63be8e7fe287836e29cde6f3d5cbc96eefd0c0e3f3747668faa2ae7324b0, Transaction: 0x39a8c432d9bdad993a33cc1faf2e9b58fb7dd940c0425f1d6db3997e4b4b05c0",
+                },
+            },
+        ],
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "Send 1 SUI tokens to eliza.sui",
+                },
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "Starting transfer to eliza.sui...",
+                    action: "SEND_TOKEN",
+                },
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "Successfully sent 1 SUI tokens to eliza.sui, Transaction: 0x39a8c432d9bdad993a33cc1faf2e9b58fb7dd940c0425f1d6db3997e4b4b05c0",
                 },
             },
         ],

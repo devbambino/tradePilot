@@ -149,7 +149,7 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) fil
 This plugin integrates with and builds upon several key technologies:
 
 - [Sui Blockchain](https://sui.io/): Next-generation smart contract platform
-- [@mysten/sui.js](https://www.npmjs.com/package/@mysten/sui.js): Official Sui SDK
+- [@mysten/sui](https://www.npmjs.com/package/@mysten/sui): Official new version Sui SDK
 - [bignumber.js](https://github.com/MikeMcl/bignumber.js/): Precise number handling
 - [node-cache](https://www.npmjs.com/package/node-cache): Caching implementation
 
