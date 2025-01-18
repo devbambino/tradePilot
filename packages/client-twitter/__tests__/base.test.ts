@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClientBase } from '../src/base';
-import { IAgentRuntime } from '@elizaos/core';
+import { ActionTimelineType, IAgentRuntime } from '@elizaos/core';
 import { TwitterConfig } from '../src/environment';
 
 describe('Twitter Client Base', () => {
@@ -35,17 +35,24 @@ describe('Twitter Client Base', () => {
 
         mockConfig = {
             TWITTER_USERNAME: 'testuser',
+            TWITTER_PASSWORD: 'hashedpassword',
+            TWITTER_EMAIL: 'test@example.com',
             TWITTER_DRY_RUN: true,
             TWITTER_SEARCH_ENABLE: false,
             TWITTER_SPACES_ENABLE: false,
             TWITTER_TARGET_USERS: [],
             TWITTER_MAX_TWEETS_PER_DAY: 10,
-            TWITTER_MAX_TWEET_LENGTH: 280,
+            MAX_TWEET_LENGTH: 280,
+            TWITTER_2FA_SECRET: '',
+            TWITTER_RETRY_LIMIT: 5,
+            TWITTER_POLL_INTERVAL: 120,
             POST_INTERVAL_MIN: 5,
             POST_INTERVAL_MAX: 10,
             ACTION_INTERVAL: 5,
             ENABLE_ACTION_PROCESSING: true,
-            POST_IMMEDIATELY: false
+            POST_IMMEDIATELY: false,
+            MAX_ACTIONS_PROCESSING: 1,
+            ACTION_TIMELINE_TYPE: ActionTimelineType.ForYou
         };
     });
 
@@ -59,7 +66,7 @@ describe('Twitter Client Base', () => {
 
     it('should initialize with correct tweet length limit', () => {
         const client = new ClientBase(mockRuntime, mockConfig);
-        expect(client.twitterConfig.TWITTER_MAX_TWEET_LENGTH).toBe(280);
+        expect(client.twitterConfig.MAX_TWEET_LENGTH).toBe(280);
     });
 
     it('should initialize with correct post intervals', () => {

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { validateTwitterConfig } from '../src/environment';
 import { IAgentRuntime } from '@elizaos/core';
+import { TestAgentRuntime, asIAgentRuntime } from './test-utils';
 
 describe('Twitter Environment Configuration', () => {
-    const mockRuntime: IAgentRuntime = {
+    const mockRuntime = {
         env: {
             TWITTER_USERNAME: 'testuser123',
             TWITTER_DRY_RUN: 'true',
@@ -11,14 +12,13 @@ describe('Twitter Environment Configuration', () => {
             TWITTER_SPACES_ENABLE: 'false',
             TWITTER_TARGET_USERS: 'user1,user2,user3',
             TWITTER_MAX_TWEETS_PER_DAY: '10',
-            TWITTER_MAX_TWEET_LENGTH: '280',
             TWITTER_POST_INTERVAL_MIN: '90',
             TWITTER_POST_INTERVAL_MAX: '180',
             TWITTER_ACTION_INTERVAL: '5',
             TWITTER_ENABLE_ACTION_PROCESSING: 'false',
             TWITTER_POST_IMMEDIATELY: 'false',
-            TWITTER_EMAIL: 'test@example.com',
-            TWITTER_PASSWORD: 'hashedpassword',
+            TWITTER_EMAIL: 'test@example.test',
+            TWITTER_PASSWORD: 'test_password',
             TWITTER_2FA_SECRET: '',
             TWITTER_POLL_INTERVAL: '120',
             TWITTER_RETRY_LIMIT: '5',
@@ -32,10 +32,10 @@ describe('Twitter Environment Configuration', () => {
         getSetting: function (key: string) {
             return this.env[key] || null;
         }
-    } as unknown as IAgentRuntime;
+    } as TestAgentRuntime;
 
     it('should validate correct configuration', async () => {
-        const config = await validateTwitterConfig(mockRuntime);
+        const config = await validateTwitterConfig(mockRuntime as IAgentRuntime);
         expect(config).toBeDefined();
         expect(config.TWITTER_USERNAME).toBe('testuser123');
         expect(config.TWITTER_DRY_RUN).toBe(true);
@@ -52,7 +52,6 @@ describe('Twitter Environment Configuration', () => {
 
     it('should validate wildcard username', async () => {
         const wildcardRuntime = {
-            ...mockRuntime,
             env: {
                 ...mockRuntime.env,
                 TWITTER_USERNAME: '*'
@@ -63,15 +62,14 @@ describe('Twitter Environment Configuration', () => {
             getSetting: function(key: string) {
                 return this.env[key] || null;
             }
-        } as IAgentRuntime;
+        } as TestAgentRuntime;
 
-        const config = await validateTwitterConfig(wildcardRuntime);
+        const config = await validateTwitterConfig(asIAgentRuntime(wildcardRuntime));
         expect(config.TWITTER_USERNAME).toBe('*');
     });
 
     it('should validate username with numbers and underscores', async () => {
         const validRuntime = {
-            ...mockRuntime,
             env: {
                 ...mockRuntime.env,
                 TWITTER_USERNAME: 'test_user_123'
@@ -82,15 +80,14 @@ describe('Twitter Environment Configuration', () => {
             getSetting: function(key: string) {
                 return this.env[key] || null;
             }
-        } as IAgentRuntime;
+        } as TestAgentRuntime;
 
-        const config = await validateTwitterConfig(validRuntime);
+        const config = await validateTwitterConfig(validRuntime as IAgentRuntime);
         expect(config.TWITTER_USERNAME).toBe('test_user_123');
     });
 
     it('should handle empty target users', async () => {
         const runtimeWithoutTargets = {
-            ...mockRuntime,
             env: {
                 ...mockRuntime.env,
                 TWITTER_TARGET_USERS: ''
@@ -101,9 +98,9 @@ describe('Twitter Environment Configuration', () => {
             getSetting: function(key: string) {
                 return this.env[key] || null;
             }
-        } as IAgentRuntime;
+        } as TestAgentRuntime;
 
-        const config = await validateTwitterConfig(runtimeWithoutTargets);
+        const config = await validateTwitterConfig(runtimeWithoutTargets as IAgentRuntime);
         expect(config.TWITTER_TARGET_USERS).toHaveLength(0);
     });
 

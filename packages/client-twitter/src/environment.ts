@@ -6,6 +6,7 @@ import {
 import { z, ZodError } from "zod";
 
 export const DEFAULT_MAX_TWEET_LENGTH = 280;
+export const DEFAULT_MAX_TWEETS_PER_DAY = 10;
 
 const twitterUsernameSchema = z
     .string()
@@ -65,6 +66,7 @@ export const twitterEnvSchema = z.object({
         .optional()
         .default(''),
     */
+    TWITTER_MAX_TWEETS_PER_DAY: z.number().int().min(1).default(DEFAULT_MAX_TWEETS_PER_DAY),
     POST_INTERVAL_MIN: z.number().int(),
     POST_INTERVAL_MAX: z.number().int(),
     ENABLE_ACTION_PROCESSING: z.boolean(),
@@ -74,7 +76,7 @@ export const twitterEnvSchema = z.object({
     MAX_ACTIONS_PROCESSING: z.number().int(),
     ACTION_TIMELINE_TYPE: z
         .nativeEnum(ActionTimelineType)
-        .default(ActionTimelineType.ForYou),
+        .default(ActionTimelineType.ForYou)
 });
 
 export type TwitterConfig = z.infer<typeof twitterEnvSchema>;
@@ -223,6 +225,12 @@ export async function validateTwitterConfig(
             ACTION_TIMELINE_TYPE:
                 runtime.getSetting("ACTION_TIMELINE_TYPE") ||
                 process.env.ACTION_TIMELINE_TYPE,
+
+            TWITTER_MAX_TWEETS_PER_DAY: safeParseInt(
+                runtime.getSetting("TWITTER_MAX_TWEETS_PER_DAY") ||
+                    process.env.TWITTER_MAX_TWEETS_PER_DAY,
+                DEFAULT_MAX_TWEETS_PER_DAY
+            ),
         };
 
         return twitterEnvSchema.parse(twitterConfig);
