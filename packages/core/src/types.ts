@@ -1621,3 +1621,10 @@ export interface ChunkRow {
     // Add other properties if needed
 }
 
+/**
+ * Interface for character config loader
+ */
+export interface ICharacterConfigLoader {
+    match(uri: string): boolean;
+    load(uri: string): Promise<any>;
+}

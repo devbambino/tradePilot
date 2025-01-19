@@ -1,3 +1,4 @@
+import { hideBin } from 'yargs/helpers';
 import { PGLiteDatabaseAdapter } from "@elizaos/adapter-pglite";
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
 import { RedisClient } from "@elizaos/adapter-redis";
@@ -31,6 +32,7 @@ import {
     type ICacheManager,
     type IDatabaseAdapter,
     type IDatabaseCacheAdapter,
+    type ICharacterConfigLoader,
     ModelProviderName,
     parseBooleanFromText,
     settings,
@@ -105,8 +107,9 @@ import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
 import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { dexScreenerPlugin } from "@elizaos/plugin-dexscreener";
 import { pythDataPlugin } from "@elizaos/plugin-pyth-data";
-
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
+import { characterConfigLoader as roochCharacterConfigLoader } from "@elizaos/plugin-rooch";
+
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -116,6 +119,10 @@ import yargs from "yargs";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
+
+const charactorConfigLoaders = new Array<ICharacterConfigLoader>(
+    roochCharacterConfigLoader,
+);
 
 export const wait = (minTime = 1000, maxTime = 3000) => {
     const waitTime =
@@ -135,7 +142,7 @@ export function parseArguments(): {
     characters?: string;
 } {
     try {
-        return yargs(process.argv.slice(3))
+        return yargs(hideBin(process.argv))
             .option("character", {
                 type: "string",
                 description: "Path to the character JSON file",
@@ -249,6 +256,72 @@ export async function loadCharacterFromOnchain(): Promise<Character[]> {
     }
 }
 
+export async function loadCharacterFromLoader(
+    loader: ICharacterConfigLoader,
+    uri: string
+): Promise<Character> {
+    try {
+        let character = await loader.load(uri);
+
+        elizaLogger.info(`loadCharacterFromLoader character config:`, JSON.stringify(character, null, 2));
+        validateCharacterConfig(character);
+
+        // .id isn't really valid
+        const characterId = character.id || character.name;
+        const characterPrefix = `CHARACTER.${characterId.toUpperCase().replace(/ /g, "_")}.`;
+        const characterSettings = Object.entries(process.env)
+            .filter(([key]) => key.startsWith(characterPrefix))
+            .reduce((settings, [key, value]) => {
+                const settingKey = key.slice(characterPrefix.length);
+                return { ...settings, [settingKey]: value };
+            }, {});
+        if (Object.keys(characterSettings).length > 0) {
+            character.settings = character.settings || {};
+            character.settings.secrets = {
+                ...characterSettings,
+                ...character.settings.secrets,
+            };
+        }
+        // Handle plugins
+        character.plugins = await handlePluginImporting(character.plugins);
+        if (character.extends) {
+            elizaLogger.info(
+                `Merging  ${character.name} character with parent characters`
+            );
+            for (const extendPath of character.extends) {
+                const baseCharacter = await loadCharacterFromLoader(loader, extendPath);
+                character = mergeCharacters(baseCharacter, character);
+                elizaLogger.info(
+                    `Merged ${character.name} with ${baseCharacter.name}`
+                );
+            }
+        }
+
+        return character;
+    } catch (e) {
+        elizaLogger.error(
+            `Error parsing character from ${process.env.IQ_WALLET_ADDRESS}: ${e}`
+        );
+        process.exit(1);
+    }
+}
+
+export async function loadCharacterFromLoaders(
+    uri: string
+): Promise<Character | null> {
+    try {
+        for (const loader of charactorConfigLoaders) {
+            if (loader.match(uri)) {
+                return await loadCharacterFromLoader(loader, uri);
+            }
+        }
+
+        return null;
+    } catch (e) {
+        elizaLogger.error(`Error loading character(s) from ${uri}: ${e}`);
+        process.exit(1);
+    }
+}
 
 async function loadCharactersFromUrl(url: string): Promise<Character[]> {
     try {
@@ -389,8 +462,15 @@ export async function loadCharacters(
     if (characterPaths?.length > 0) {
         for (const characterPath of characterPaths) {
             try {
-                const character: Character =
-                    await loadCharacterTryPath(characterPath);
+                // load character from loader
+                let character = await loadCharacterFromLoaders(characterPath)
+                if (character) {
+                    loadedCharacters.push(character);
+                    continue
+                }
+
+                // load character from
+                character = await loadCharacterTryPath(characterPath);
                 loadedCharacters.push(character);
             } catch (e) {
                 process.exit(1);

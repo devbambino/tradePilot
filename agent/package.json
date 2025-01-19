@@ -4,7 +4,7 @@
     "main": "src/index.ts",
     "type": "module",
     "scripts": {
-        "start": "node --loader ts-node/esm src/index.ts",
+        "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
         "dev": "node --loader ts-node/esm src/index.ts",
         "check-types": "tsc --noEmit",
         "test": "jest"
@@ -72,6 +72,7 @@
         "@elizaos/plugin-giphy": "workspace:*",
         "@elizaos/plugin-ton": "workspace:*",
         "@elizaos/plugin-sui": "workspace:*",
+        "@elizaos/plugin-rooch": "workspace:*",
         "@elizaos/plugin-sgx": "workspace:*",
         "@elizaos/plugin-iq6900": "workspace:*",
         "@elizaos/plugin-tee": "workspace:*",
