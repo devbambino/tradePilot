@@ -1,4 +1,3 @@
-{
   "name": "@elizaos/agent",
   "version": "0.1.9-alpha.1",
   "main": "src/index.ts",
@@ -56,6 +55,7 @@
     "@elizaos/plugin-gitcoin-passport": "workspace:*",
     "@elizaos/plugin-goat": "workspace:*",
     "@elizaos/plugin-lensNetwork": "workspace:*",
+    "@elizaos/plugin-hive": "workspace:*",
     "@elizaos/plugin-icp": "workspace:*",
     "@elizaos/plugin-image-generation": "workspace:*",
     "@elizaos/plugin-movement": "workspace:*",

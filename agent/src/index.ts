@@ -76,6 +76,7 @@ import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
 import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { gitcoinPassportPlugin } from "@elizaos/plugin-gitcoin-passport";
+import { hivePlugin } from "@elizaos/plugin-hive";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
 import { lensPlugin } from "@elizaos/plugin-lensNetwork";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
@@ -1011,6 +1012,11 @@ export async function createAgent(
             getSecret(character, "FLOW_ADDRESS") &&
                 getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
+                : null,
+            getSecret(character, "HIVE_ACCOUNT") &&
+            getSecret(character, "HIVE_POSTING_KEY") &&
+            getSecret(character, "HIVE_ACTIVE_KEY")
+                ? hivePlugin
                 : null,
             getSecret(character, "LENS_ADDRESS") &&
                 getSecret(character, "LENS_PRIVATE_KEY")
