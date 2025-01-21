@@ -953,6 +953,9 @@ importers:
       '@lens-protocol/metadata':
         specifier: 1.2.0
         version: 1.2.0(zod@3.23.8)
+      arweave:
+        specifier: 1.15.5
+        version: 1.15.5
       axios:
         specifier: ^1.7.9
         version: 1.7.9
@@ -40837,7 +40840,6 @@ snapshots:
   arconnect@0.4.2:
     dependencies:
       arweave: 1.15.5
-    optional: true
 
   are-docs-informative@0.0.2: {}
 
@@ -40957,7 +40959,6 @@ snapshots:
       asn1.js: 5.4.1
       base64-js: 1.5.1
       bignumber.js: 9.1.2
-    optional: true
 
   asn1.js@4.10.1:
     dependencies:
