@@ -1,0 +1,307 @@
+Active Inference Example Log
+Timestamp: 2025-01-21T20:54:28.685Z
+
+
+----------------------------------------
+Starting Active Inference Example
+
+Running simulation for 20 timesteps
+
+Model Description:
+- Two possible states: SAFE (0) and DANGEROUS (1)
+- Two possible observations: SAFE signal (0) and DANGER signal (1)
+- Two possible actions: STAY/OBSERVE (0) and MOVE/CHANGE (1)
+
+
+----------------------------------------
+Model Parameters
+
+Observation Model (A):
+P(observation | state) =
+State-Observation Mapping:
+  0.80	0.20
+  0.20	0.80
+
+State Transition Model (B):
+Action 0 (Stay/Observe):
+Stay/Observe Transitions:
+  0.90	0.10
+  0.10	0.90
+
+Action 1 (Move/Change):
+Move/Change Transitions:
+  0.50	0.50
+  0.50	0.50
+
+Prior Preferences (C):
+State Preferences:
+  0.80
+  0.20
+
+Initial State Prior (D):
+Initial Beliefs:
+  0.50
+  0.50
+
+
+----------------------------------------
+Model Configuration
+
+- Action precision: 2
+- State transition noise: 1
+- Belief update iterations: 5
+
+
+----------------------------------------
+Running Inference
+
+
+----------------------------------------
+Timestep 0: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 1: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 2: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 3: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 4: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 5: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 6: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 7: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 8: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 9: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 10: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 11: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 12: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 13: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 14: SAFE signal
+
+Perception Results:
+- State interpretation: Very confident in SAFE state
+- Belief distribution: Safe=95.3%, Dangerous=4.7%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=2.452, Move=2.386]
+
+
+----------------------------------------
+Timestep 15: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 16: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 17: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 18: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Timestep 19: DANGER signal
+
+Perception Results:
+- State interpretation: Very confident in DANGEROUS state
+- Belief distribution: Safe=4.7%, Dangerous=95.3%
+
+Action Selection Results:
+- Selected action: MOVE/CHANGE
+- Expected free energies: [Stay=1.930, Move=2.386]
+
+
+----------------------------------------
+Example Completed
+
+Results have been saved to the Output directory:
+- Full log: inference_log.txt
+- Belief evolution data: belief_evolution.csv
+- Expected free energies data: expected_free_energies.csv
+- Visualization script: plot_results.py
+- Results visualization: results.html
