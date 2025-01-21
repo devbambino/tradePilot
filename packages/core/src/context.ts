@@ -1,6 +1,6 @@
 import handlebars from "handlebars";
-import type { State, TemplateType } from "./types.ts";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
+import type { State, TemplateType } from "./types.ts";
 
 /**
  * Composes a context string by replacing placeholders in a template with corresponding values from the state.
@@ -56,6 +56,7 @@ export const composeContext = ({
         const key = match.replace(/{{|}}/g, "");
         return state[key] ?? "";
     });
+    //console.log('DEBUG OUT',out)
     return out;
 };
 
@@ -104,7 +105,7 @@ export const addHeader = (header: string, body: string) => {
  */
 export const composeRandomUser = (template: string, length: number) => {
     const exampleNames = Array.from({ length }, () =>
-        uniqueNamesGenerator({ dictionaries: [names] })
+        uniqueNamesGenerator({ dictionaries: [names] }),
     );
     let result = template;
     for (let i = 0; i < exampleNames.length; i++) {

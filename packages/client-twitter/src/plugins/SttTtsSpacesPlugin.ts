@@ -1,32 +1,32 @@
 // src/plugins/SttTtsPlugin.ts
 
-import { spawn } from "child_process";
 import {
-    type ITranscriptionService,
-    elizaLogger,
-    stringToUuid,
-    composeContext,
-    getEmbeddingZeroVector,
-    generateMessageResponse,
-    ModelClass,
     Content,
     IAgentRuntime,
+    type ITranscriptionService,
     Memory,
+    ModelClass,
     Plugin,
-    UUID,
     State,
+    UUID,
+    composeContext,
     composeRandomUser,
+    elizaLogger,
+    generateMessageResponse,
     generateShouldRespond,
+    getEmbeddingZeroVector,
+    stringToUuid,
 } from "@elizaos/core";
 import type {
-    Space,
-    JanusClient,
     AudioDataWithUser,
+    JanusClient,
+    Space,
 } from "agent-twitter-client";
+import { spawn } from "child_process";
 import { ClientBase } from "../base";
 import {
-    twitterVoiceHandlerTemplate,
     twitterShouldRespondTemplate,
+    twitterVoiceHandlerTemplate,
 } from "./templates";
 
 interface PluginConfig {
@@ -382,6 +382,7 @@ export class SttTtsPlugin implements Plugin {
                     return;
                 }
             } catch (err) {
+                console.log("SttTtsplugin error",err);
                 elizaLogger.error("[SttTtsPlugin] TTS streaming error =>", err);
             } finally {
                 // Clean up the AbortController

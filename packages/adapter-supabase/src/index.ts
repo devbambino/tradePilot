@@ -1,18 +1,18 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
-    type Memory,
-    type Goal,
-    type Relationship,
-    type Actor,
-    type GoalStatus,
-    type Account,
-    type UUID,
-    type Participant,
-    type Room,
-    type RAGKnowledgeItem,
+    DatabaseAdapter,
     elizaLogger,
+    type Account,
+    type Actor,
+    type Goal,
+    type GoalStatus,
+    type Memory,
+    type Participant,
+    type RAGKnowledgeItem,
+    type Relationship,
+    type Room,
+    type UUID,
 } from "@elizaos/core";
-import { DatabaseAdapter } from "@elizaos/core";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { v4 as uuid } from "uuid";
 export class SupabaseDatabaseAdapter extends DatabaseAdapter {
     async getRoom(roomId: UUID): Promise<UUID | null> {
@@ -37,7 +37,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (error) {
             throw new Error(
-                `Error getting participants for account: ${error.message}`
+                `Error getting participants for account: ${error.message}`,
             );
         }
 
@@ -46,7 +46,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
     async getParticipantUserState(
         roomId: UUID,
-        userId: UUID
+        userId: UUID,
     ): Promise<"FOLLOWED" | "MUTED" | null> {
         const { data, error } = await this.supabase
             .from("participants")
@@ -66,7 +66,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
     async setParticipantUserState(
         roomId: UUID,
         userId: UUID,
-        state: "FOLLOWED" | "MUTED" | null
+        state: "FOLLOWED" | "MUTED" | null,
     ): Promise<void> {
         const { error } = await this.supabase
             .from("participants")
@@ -88,7 +88,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (error) {
             throw new Error(
-                `Error getting participants for room: ${error.message}`
+                `Error getting participants for room: ${error.message}`,
             );
         }
 
@@ -176,7 +176,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
           participants:participants(
             account:accounts(id, name, username, details)
           )
-      `
+      `,
                 )
                 .eq("id", params.roomId);
 
@@ -186,18 +186,17 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             }
             const { data } = response;
 
-            return data
-                .flatMap((room) =>
-                    room.participants.map((participant) => {
-                        const user = participant.account as unknown as Actor;
-                        return {
-                            name: user?.name,
-                            details: user?.details,
-                            id: user?.id,
-                            username: user?.username,
-                        };
-                    })
-                );
+            return data.flatMap((room) =>
+                room.participants.map((participant) => {
+                    const user = participant.account as unknown as Actor;
+                    return {
+                        name: user?.name,
+                        details: user?.details,
+                        id: user?.id,
+                        username: user?.username,
+                    };
+                }),
+            );
         } catch (error) {
             elizaLogger.error("error", error);
             throw error;
@@ -331,7 +330,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             agentId?: UUID;
             unique?: boolean;
             tableName: string;
-        }
+        },
     ): Promise<Memory[]> {
         const queryParams = {
             query_table_name: params.tableName,
@@ -371,7 +370,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
     async getMemoriesByIds(
         memoryIds: UUID[],
-        tableName?: string
+        tableName?: string,
     ): Promise<Memory[]> {
         if (memoryIds.length === 0) return [];
 
@@ -397,7 +396,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
     async createMemory(
         memory: Memory,
         tableName: string,
-        unique = false
+        unique = false,
     ): Promise<void> {
         const createdAt = memory.createdAt ?? Date.now();
         if (unique) {
@@ -414,7 +413,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
             const result = await this.supabase.rpc(
                 "check_similarity_and_insert",
-                opts
+                opts,
             );
 
             if (result.error) {
@@ -456,7 +455,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
     async countMemories(
         roomId: UUID,
         unique = true,
-        tableName: string
+        tableName: string,
     ): Promise<number> {
         if (!tableName) {
             throw new Error("tableName is required");
@@ -490,7 +489,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         const { data: goals, error } = await this.supabase.rpc(
             "get_goals",
-            opts
+            opts,
         );
 
         if (error) {
@@ -545,7 +544,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (error) {
             throw new Error(
-                `Error getting rooms by participant: ${error.message}`
+                `Error getting rooms by participant: ${error.message}`,
             );
         }
 
@@ -560,7 +559,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (error) {
             throw new Error(
-                `Error getting rooms by participants: ${error.message}`
+                `Error getting rooms by participants: ${error.message}`,
             );
         }
 
@@ -658,7 +657,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (participantsError) {
             throw new Error(
-                "Participants creation error: " + participantsError.message
+                "Participants creation error: " + participantsError.message,
             );
         }
 
@@ -676,7 +675,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
         if (relationshipError) {
             throw new Error(
-                "Relationship creation error: " + relationshipError.message
+                "Relationship creation error: " + relationshipError.message,
             );
         }
 
@@ -775,7 +774,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
         } catch (error) {
             elizaLogger.error(
                 "Database connection error in deleteCache",
-                error instanceof Error ? error.message : String(error)
+                error instanceof Error ? error.message : String(error),
             );
             return false;
         }
@@ -897,7 +896,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
                 if (metadata.isShared && error.code === "23505") {
                     // Unique violation
                     elizaLogger.info(
-                        `Shared knowledge ${knowledge.id} already exists, skipping`
+                        `Shared knowledge ${knowledge.id} already exists, skipping`,
                     );
                     return;
                 }
@@ -935,7 +934,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             if (error) {
                 elizaLogger.error(
                     `Error clearing shared knowledge for agent ${agentId}:`,
-                    error
+                    error,
                 );
                 throw error;
             }
@@ -948,7 +947,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             if (error) {
                 elizaLogger.error(
                     `Error clearing knowledge for agent ${agentId}:`,
-                    error
+                    error,
                 );
                 throw error;
             }
