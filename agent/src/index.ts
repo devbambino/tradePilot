@@ -4,19 +4,18 @@ import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
 import { SupabaseDatabaseAdapter } from "@elizaos/adapter-supabase";
 import { AutoClientInterface } from "@elizaos/client-auto";
+import { DirectClient } from "@elizaos/client-direct";
 import { DiscordClientInterface } from "@elizaos/client-discord";
+import { FarcasterClientInterface } from "@elizaos/client-farcaster";
 import { InstagramClientInterface } from "@elizaos/client-instagram";
 import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-import { FarcasterClientInterface } from "@elizaos/client-farcaster";
-import { DirectClient } from "@elizaos/client-direct";
 import { agentKitPlugin } from "@elizaos/plugin-agentkit";
 // import { ReclaimAdapter } from "@elizaos/plugin-reclaim";
-import { PrimusAdapter } from "@elizaos/plugin-primus";
-import { lightningPlugin } from "@elizaos/plugin-lightning";
 import { elizaCodeinPlugin, onchainJson } from "@elizaos/plugin-iq6900";
+import { PrimusAdapter } from "@elizaos/plugin-primus";
 
 import {
     AgentRuntime,
@@ -57,7 +56,6 @@ import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { b2Plugin } from "@elizaos/plugin-b2";
 import { binancePlugin } from "@elizaos/plugin-binance";
 import { birdeyePlugin } from "@elizaos/plugin-birdeye";
-import { bnbPlugin } from "@elizaos/plugin-bnb";
 import {
     advancedTradePlugin,
     coinbaseCommercePlugin,
@@ -71,14 +69,19 @@ import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
+import { dexScreenerPlugin } from "@elizaos/plugin-dexscreener";
+import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { evmPlugin } from "@elizaos/plugin-evm";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
 import { genLayerPlugin } from "@elizaos/plugin-genlayer";
+import { giphyPlugin } from "@elizaos/plugin-giphy";
 import { gitcoinPassportPlugin } from "@elizaos/plugin-gitcoin-passport";
-import { initiaPlugin } from "@elizaos/plugin-initia";
+import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
+import { injectivePlugin } from "@elizaos/plugin-injective";
 import { lensPlugin } from "@elizaos/plugin-lensNetwork";
+import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import createNFTCollectionsPlugin from "@elizaos/plugin-nft-collections";
@@ -90,8 +93,6 @@ import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { quaiPlugin } from "@elizaos/plugin-quai";
 import { sgxPlugin } from "@elizaos/plugin-sgx";
 import { solanaPlugin } from "@elizaos/plugin-solana";
-import { solanaAgentkitPlugin } from "@elizaos/plugin-solana-agent-kit";
-import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
@@ -99,27 +100,14 @@ import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
 import { teeLogPlugin } from "@elizaos/plugin-tee-log";
 import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
+import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
-import { dkgPlugin } from "@elizaos/plugin-dkg";
-import { injectivePlugin } from "@elizaos/plugin-injective";
-import { giphyPlugin } from "@elizaos/plugin-giphy";
-import { letzAIPlugin } from "@elizaos/plugin-letzai";
-import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
-import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
-import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
-import { dexScreenerPlugin } from "@elizaos/plugin-dexscreener";
-import { pythDataPlugin } from "@elizaos/plugin-pyth-data";
 
-import { openaiPlugin } from "@elizaos/plugin-openai";
 import nitroPlugin from "@elizaos/plugin-router-nitro";
-import { devinPlugin } from "@elizaos/plugin-devin";
 
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 
-import { nvidiaNimPlugin } from "@elizaos/plugin-nvidia-nim";
-
-import { zxPlugin } from "@elizaos/plugin-0x";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -914,7 +902,9 @@ export async function createAgent(
                 ? elizaCodeinPlugin
                 : null,
             bootstrapPlugin,
-            getSecret(character, "CDP_API_KEY_NAME") && getSecret(character, "CDP_API_KEY_PRIVATE_KEY") && getSecret(character, "CDP_AGENT_KIT_NETWORK")
+            getSecret(character, "CDP_API_KEY_NAME") &&
+            getSecret(character, "CDP_API_KEY_PRIVATE_KEY") &&
+            getSecret(character, "CDP_AGENT_KIT_NETWORK")
                 ? agentKitPlugin
                 : null,
             getSecret(character, "DEXSCREENER_API_KEY")
@@ -1092,37 +1082,6 @@ export async function createAgent(
             getSecret(character, "QUAI_PRIVATE_KEY") ? quaiPlugin : null,
             getSecret(character, "RESERVOIR_API_KEY")
                 ? createNFTCollectionsPlugin()
-                : null,
-            getSecret(character, "ZERO_EX_API_KEY") ? zxPlugin : null,
-            getSecret(character, "DKG_PRIVATE_KEY") ? dkgPlugin : null,
-            getSecret(character, "PYTH_TESTNET_PROGRAM_KEY") ||
-            getSecret(character, "PYTH_MAINNET_PROGRAM_KEY")
-                ? pythDataPlugin
-                : null,
-            getSecret(character, "LND_TLS_CERT") &&
-            getSecret(character, "LND_MACAROON") &&
-            getSecret(character, "LND_SOCKET")
-                ? lightningPlugin
-                : null,
-            getSecret(character, "OPENAI_API_KEY") &&
-            parseBooleanFromText(
-                getSecret(character, "ENABLE_OPEN_AI_COMMUNITY_PLUGIN"),
-            )
-                ? openaiPlugin
-                : null,
-            getSecret(character, "DEVIN_API_TOKEN")
-                ? devinPlugin
-                : null,
-            getSecret(character, "INITIA_PRIVATE_KEY") ? initiaPlugin : null,
-
-            getSecret(character, "NVIDIA_NIM_API_KEY") ||
-            getSecret(character, "NVIDIA_NGC_API_KEY")
-                ? nvidiaNimPlugin
-                : null,
-            getSecret(character, "INITIA_PRIVATE_KEY") && getSecret(character, "INITIA_NODE_URL") ? initiaPlugin : null,
-            getSecret(character, "BNB_PRIVATE_KEY") ||
-            getSecret(character, "BNB_PUBLIC_KEY")?.startsWith("0x")
-                ? bnbPlugin
                 : null,
         ].filter(Boolean),
         providers: [],
