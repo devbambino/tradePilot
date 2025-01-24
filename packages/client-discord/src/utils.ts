@@ -1,5 +1,5 @@
 import {
-    IAgentRuntime,
+    type IAgentRuntime,
     ModelClass,
     elizaLogger,
     generateText,
@@ -8,17 +8,17 @@ import {
 } from "@elizaos/core";
 import {
     ChannelType,
-    Message as DiscordMessage,
+    type Message as DiscordMessage,
     PermissionsBitField,
-    TextChannel,
+    type TextChannel,
     ThreadChannel,
 } from "discord.js";
 
 export function getWavHeader(
     audioLength: number,
     sampleRate: number,
-    channelCount: number = 1,
-    bitsPerSample: number = 16
+    channelCount = 1,
+    bitsPerSample = 16
 ): Buffer {
     const wavHeader = Buffer.alloc(44);
     wavHeader.write("RIFF", 0);
@@ -47,7 +47,7 @@ export async function generateSummary(
     text: string
 ): Promise<{ title: string; description: string }> {
     // make sure text is under 128k characters
-    text = trimTokens(text, 100000, "gpt-4o-mini"); // TODO: clean this up
+    text = await trimTokens(text, 100000, runtime);
 
     const prompt = `Please generate a concise summary for the following text:
 
@@ -133,7 +133,7 @@ function splitMessage(content: string): string[] {
     const rawLines = content?.split("\n") || [];
     // split all lines into MAX_MESSAGE_LENGTH chunks so any long lines are split
     const lines = rawLines
-        .map((line) => {
+        .flatMap((line) => {
             const chunks = [];
             while (line.length > MAX_MESSAGE_LENGTH) {
                 chunks.push(line.slice(0, MAX_MESSAGE_LENGTH));
@@ -141,8 +141,7 @@ function splitMessage(content: string): string[] {
             }
             chunks.push(line);
             return chunks;
-        })
-        .flat();
+        });
 
     for (const line of lines) {
         if (currentMessage.length + line.length + 1 > MAX_MESSAGE_LENGTH) {

@@ -3,13 +3,13 @@ import { generateText } from "@elizaos/core";
 import { getGoals } from "@elizaos/core";
 import { parseJsonArrayFromText } from "@elizaos/core";
 import {
-    IAgentRuntime,
-    Memory,
+    type IAgentRuntime,
+    type Memory,
     ModelClass,
-    Objective,
+    type Objective,
     type Goal,
     type State,
-    Evaluator,
+    type Evaluator,
 } from "@elizaos/core";
 
 const goalsTemplate = `TASK: Update Goal
@@ -55,7 +55,6 @@ async function handler(
     state: State | undefined,
     options: { [key: string]: unknown } = { onlyInProgress: true }
 ): Promise<Goal[]> {
-
     state = (await runtime.composeState(message)) as State;
     const context = composeContext({
         state,
