@@ -112,6 +112,14 @@ import { giphyPlugin } from "@elizaos/plugin-giphy";
 import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
+import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
+import { raggraphPlugin } from "@elizaos/plugin-raggraph";
+import { OpacityAdapter } from "@elizaos/plugin-opacity";
+import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
+import { stargazePlugin } from "@elizaos/plugin-stargaze";
+import { akashPlugin } from "@elizaos/plugin-akash";
+import { quaiPlugin } from "@elizaos/plugin-quai";
+
 import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { dexScreenerPlugin } from "@elizaos/plugin-dexscreener";
 import { pythDataPlugin } from "@elizaos/plugin-pyth-data";
@@ -124,6 +132,7 @@ import { chainbasePlugin } from "@elizaos/plugin-chainbase";
 import { nvidiaNimPlugin } from "@elizaos/plugin-nvidia-nim";
 import { zxPlugin } from "@elizaos/plugin-0x";
 import { hyperbolicPlugin } from "@elizaos/plugin-hyperbolic";
+
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -1106,6 +1115,11 @@ export async function createAgent(
                 : null,
             getSecret(character, "OPEN_WEATHER_API_KEY")
                 ? openWeatherPlugin
+                : null,
+            getSecret(character, "NEO4J_URI") &&
+            getSecret(character, "NEO4J_USER") &&
+            getSecret(character, "NEO4J_PASSWORD")
+                ? raggraphPlugin
                 : null,
             getSecret(character, "OBSIDIAN_API_TOKEN") ? obsidianPlugin : null,
             getSecret(character, "ARTHERA_PRIVATE_KEY")?.startsWith("0x")
