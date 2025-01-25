@@ -12,6 +12,7 @@ import {
     SpeechService,
     TranscriptionService,
     VideoService,
+    TranslationService,
 } from "./services/index.ts";
 
 export type NodePlugin = ReturnType<typeof createNodePlugin>;
@@ -29,6 +30,7 @@ export function createNodePlugin() {
             new TranscriptionService(),
             new VideoService(),
             new AwsS3Service(),
+            new TranslationService(),
         ],
         actions: [describeImage],
     } as const satisfies Plugin;

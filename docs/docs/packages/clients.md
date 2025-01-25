@@ -88,6 +88,7 @@ DISCORD_API_TOKEN = your_bot_token;
 - Reactions handling
 - Media transcription
 - Room management
+- Message translations
 
 ### Voice Integration
 

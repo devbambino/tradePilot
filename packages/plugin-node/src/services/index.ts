@@ -6,6 +6,7 @@ import { PdfService } from "./pdf.ts";
 import { SpeechService } from "./speech.ts";
 import { TranscriptionService } from "./transcription.ts";
 import { VideoService } from "./video.ts";
+import { TranslationService } from "./translation.ts";
 
 export {
     AwsS3Service,
@@ -16,4 +17,5 @@ export {
     SpeechService,
     TranscriptionService,
     VideoService,
+    TranslationService,
 };

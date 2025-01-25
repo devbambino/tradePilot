@@ -147,6 +147,24 @@ export class DiscordClient extends EventEmitter {
                 name: "leavechannel",
                 description: "Leave the current voice channel",
             },
+            {
+                name: "translate",
+                description: "Translate text",
+                options: [
+                    {
+                        name: "text",
+                        type: 3, // STRING type
+                        description: "Text for translation",
+                        required: true,
+                    },
+                    {
+                        name: "to",
+                        type: 3, // STRING type
+                        description: "Target language(s) for translation",
+                        required: true,
+                    },
+                ],
+            },
         ];
 
         try {
@@ -383,6 +401,9 @@ export class DiscordClient extends EventEmitter {
                 break;
             case "leavechannel":
                 await this.voiceManager.handleLeaveChannelCommand(interaction);
+                break;
+            case "translate":
+                await this.messageManager.handleTranslateCommand(interaction);
                 break;
         }
     }
