@@ -1575,6 +1575,7 @@ export enum VerifiableInferenceProvider {
     RECLAIM = "reclaim",
     OPACITY = "opacity",
     PRIMUS = "primus",
+    HASH_NETWORK = "hash_network"
 }
 
 /**
