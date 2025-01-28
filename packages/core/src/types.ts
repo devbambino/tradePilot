@@ -722,18 +722,6 @@ export type Character = {
     /** Optional system prompt */
     system?: string;
 
-    /** Model provider to use */
-    modelProvider: ModelProviderName;
-
-    /** Image model provider to use, if different from modelProvider */
-    imageModelProvider?: ModelProviderName;
-
-    /** Image Vision model provider to use, if different from modelProvider */
-    imageVisionModelProvider?: ModelProviderName;
-
-    /** Optional model endpoint override */
-    modelEndpointOverride?: string;
-
     /** Optional prompt templates */
     templates?: {
         goalsTemplate?: TemplateType;
@@ -1270,10 +1258,6 @@ export interface IAgentRuntime {
     agentId: UUID;
     serverUrl: string;
     databaseAdapter: IDatabaseAdapter;
-    token: string | null;
-    modelProvider: ModelProviderName;
-    imageModelProvider: ModelProviderName;
-    imageVisionModelProvider: ModelProviderName;
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1281,6 +1265,7 @@ export interface IAgentRuntime {
     plugins: Plugin[];
 
     fetch?: typeof fetch | null;
+    call: (name: string, args: any) => Promise<any>;
 
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
@@ -1295,8 +1280,6 @@ export interface IAgentRuntime {
     // any could be EventEmitter
     // but I think the real solution is forthcoming as a base client interface
     clients: Record<string, any>;
-
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter | null;
 
     initialize(): Promise<void>;
 
@@ -1566,69 +1549,6 @@ export interface ActionResponse {
 
 export interface ISlackService extends Service {
     client: any;
-}
-
-/**
- * Available verifiable inference providers
- */
-export enum VerifiableInferenceProvider {
-    RECLAIM = "reclaim",
-    OPACITY = "opacity",
-    PRIMUS = "primus",
-}
-
-/**
- * Options for verifiable inference
- */
-export interface VerifiableInferenceOptions {
-    /** Custom endpoint URL */
-    endpoint?: string;
-    /** Custom headers */
-    headers?: Record<string, string>;
-    /** Provider-specific options */
-    providerOptions?: Record<string, unknown>;
-}
-
-/**
- * Result of a verifiable inference request
- */
-export interface VerifiableInferenceResult {
-    /** Generated text */
-    text: string;
-    /** Proof */
-    proof: any;
-    /** Proof id */
-    id?: string;
-    /** Provider information */
-    provider: VerifiableInferenceProvider;
-    /** Timestamp */
-    timestamp: number;
-}
-
-/**
- * Interface for verifiable inference adapters
- */
-export interface IVerifiableInferenceAdapter {
-    options: any;
-    /**
-     * Generate text with verifiable proof
-     * @param context The input text/prompt
-     * @param modelClass The model class/name to use
-     * @param options Additional provider-specific options
-     * @returns Promise containing the generated text and proof data
-     */
-    generateText(
-        context: string,
-        modelClass: string,
-        options?: VerifiableInferenceOptions,
-    ): Promise<VerifiableInferenceResult>;
-
-    /**
-     * Verify the proof of a generated response
-     * @param result The result containing response and proof to verify
-     * @returns Promise indicating if the proof is valid
-     */
-    verifyProof(result: VerifiableInferenceResult): Promise<boolean>;
 }
 
 export enum TokenizerType {
