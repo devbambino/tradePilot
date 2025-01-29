@@ -19,6 +19,7 @@ graph TD
     CI --> TWC["Twitter Client"]
     CI --> AC["Auto Client"]
     CI --> DEVA["Deva Client"]
+    CI --> NC["Nostr Client"]
 
     %% Key Features - one per client for clarity
     DC --> |"REST API"| DC1["Messages & Images"]
@@ -27,6 +28,7 @@ graph TD
     TWC --> |"Social"| TWC1["Posts & Interactions"]
     AC --> |"Trading"| AC1["Analysis & Execution"]
     DEVA --> |"Social"| DEVA1["Messages & Execution"]
+    NC --> |"Social"| NC1["Posts & Interactions"]
 
     %% Simple styling with better contrast and black text
     classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px,color:black
@@ -44,6 +46,7 @@ graph TD
 -   **Auto** (`@elizaos/client-auto`) - Automated trading and interaction client
 -   **Alexa skill** (`@elizaos/client-alexa`) - Alexa skill API integration
 -   **Deva** (`@elizaos/client-deva`) - Client for integrating with Deva.me
+-   **Nostr** (`@elizaos/client-nostr`) - Nostr bot integration
 
 ---
 
@@ -67,6 +70,9 @@ pnpm add @elizaos/client-auto
 
 # Deva Client
 pnpm add @elizaos/client-deva
+
+# Nostr
+pnpm add @elizaos/client-nostr
 ```
 
 ---
@@ -297,96 +303,42 @@ class AutoClient {
 }
 ```
 
-## Alexa Client
+## Nostr Client
 
-The Alexa client provides API integration with alexa skill.
+The Nostr client enables posting and interacting with Nostr users.
 
 ### Basic Setup
 
 ```typescript
-import { AlexaClientInterface } from "@elizaos/client-alexa";
-
-// Initialize client
-const client = await AlexaClientInterface.start(runtime);
+import { NostrAgentClient } from "@eliza/client-nostr";
+// Initialize and start the client
+await new NostrAgentClient(runtime).start();
 
 // Configuration in .env
-ALEXA_SKILL_ID= your_alexa_skill_id
-ALEXA_CLIENT_ID= your_alexa_client_id #Alexa developer console permissions tab
-ALEXA_CLIENT_SECRET= your_alexa_client_secret #Alexa developer console permissions tab
+// The list of Nostr relays to connect to.
+NOSTR_RELAYS="wss://relay.damus.io,wss://relay.primal.net"
+// Nostr Private Key (starts with nsec)
+NOSTR_NSEC_KEY="nsec1..."
+// Nostr Public Key (starts with npub)
+NOSTR_NPUB_KEY="npub1..."
+// How often (in seconds) the bot should check for Nostr interactions (default: 2 minutes)
+NOSTR_POLL_INTERVAL=120
+// Whether to post immediately or not
+NOSTR_POST_IMMEDIATELY=false
+// Whether to dry run or not
+NOSTR_DRY_RUN=false
 ```
 
-## Deva Client
+### Components
 
-The Deva client allows fetching user-related data and making posts based on it.
+- **NostrClient**: Handles creating and managing posts
 
-### Client setup
-
-```typescript
-export const DevaClientInterface: Client = {
-    async start(runtime: IAgentRuntime) {
-        await validateDevaConfig(runtime);
-
-        const deva = new DevaClient(
-            runtime,
-            runtime.getSetting("DEVA_API_KEY"),
-            runtime.getSetting("DEVA_API_BASE_URL"),
-        );
-
-        await deva.start();
-
-        elizaLogger.success(
-            `✅ Deva client successfully started for character ${runtime.character.name}`,
-        );
-
-        return deva;
-    },
-};
-```
-
-### Fetch personal user data
+### Post Management
 
 ```typescript
-public async getMe(): Promise<DevaPersona | null> {
-    return await fetch(`${this.apiBaseUrl}/persona`, {
-		    headers: { ...this.defaultHeaders },
-    })
-        .then((res) => res.json())
-        .catch(() => null);
+class NostrClient {
+  async publishNote(content: string) {};
 }
-```
-
-### Fetch user posts
-
-```typescript
-public async getPersonaPosts(personaId: string): Promise<DevaPost[]> {
-	  const res = await fetch(
-		    `${this.apiBaseUrl}/post?filter_persona_id=${personaId}`, 
-        {
-			      headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-        },
-    })
-        .then((res) => res.json());
-	  
-	  return res.items;
-}
-```
-
-### Create and publish a post on behalf of the user
-
-```typescript
-public async makePost({ text, in_reply_to_id }: { text: string; in_reply_to_id: string }): Promise<DevaPost> {
-    const res = await fetch(`${this.apiBaseUrl}/post`, {
-		    method: "POST", 
-        headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text, in_reply_to_id, author_type: "BOT" }),
-    }).then((res) => res.json());
-
-    return res;
 ```
 
 ## Common Features

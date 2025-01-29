@@ -648,9 +648,11 @@ export type Plugin = {
  * Available client platforms
  */
 export enum Clients {
-    ALEXA= "alexa",
+    ALEXA = "alexa",
     DISCORD = "discord",
-    DIRECT = "direct",
+    // you can't specify this in characters
+    // all characters are registered with this
+    //    DIRECT = "direct",
     TWITTER = "twitter",
     TELEGRAM = "telegram",
     TELEGRAM_ACCOUNT = "telegram-account",
@@ -663,6 +665,7 @@ export enum Clients {
     SIMSAI = "simsai",
     XMTP = "xmtp",
     DEVA = "deva",
+    NOSTR = "nostr",
 }
 
 export interface IAgentConfig {
@@ -776,6 +779,9 @@ export type Character = {
         jeeterMessageHandlerTemplate?: string;
         jeeterShouldRespondTemplate?: string;
         devaPostTemplate?: string;
+        nostrMessageHandlerTemplate?: TemplateType;
+        nostrShouldRespondTemplate?: TemplateType;
+        nostrPostTemplate?: TemplateType;
     };
 
     /** Character biography */
@@ -1424,7 +1430,6 @@ export interface IPdfService extends Service {
 export interface IAwsS3Service extends Service {
     uploadFile(
         imagePath: string,
-        subDirectory: string,
         useSignedUrl: boolean,
         expiresIn: number,
     ): Promise<{
