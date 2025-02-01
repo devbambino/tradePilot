@@ -4,7 +4,7 @@ import settings from "./settings.ts";
 import elizaLogger from "./logger.ts";
 import LocalEmbeddingModelManager from "./localembeddingManager.ts";
 
-interface EmbeddingOptions {
+export interface EmbeddingOptions {
     model: string;
     endpoint: string;
     apiKey?: string;
@@ -99,6 +99,8 @@ async function getRemoteEmbedding(
     };
 
     try {
+        elizaLogger.debug("Full URL:", fullUrl);
+        elizaLogger.debug("Request Options:", requestOptions);
         const response = await fetch(fullUrl, requestOptions);
 
         if (!response.ok) {
@@ -301,4 +303,15 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         }
         return null;
     }
+}
+
+export async function getEmbeddingForTest(input: string, config: EmbeddingOptions) {
+    return await getRemoteEmbedding(input, {
+        model: config.model,
+        endpoint: config.endpoint,
+        apiKey: config.apiKey,
+        dimensions: config.dimensions,
+        isOllama: config.isOllama,
+        provider: config.provider
+    });
 }
