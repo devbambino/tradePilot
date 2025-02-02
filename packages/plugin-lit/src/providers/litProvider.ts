@@ -51,8 +51,14 @@ export const litProvider: Provider = {
       // Try to load existing config
       const savedConfig = configManager.loadConfig();
 
+      // Get RPC URL from runtime settings
+      const rpcUrl = runtime.getSetting("EVM_RPC_URL");
+      if (!rpcUrl) {
+        throw new Error("No RPC URL provided");
+      }
+
       const provider = new ethers.providers.StaticJsonRpcProvider({
-        url: LIT_RPC.CHRONICLE_YELLOWSTONE,
+        url: rpcUrl,
         skipFetchSetup: true,
       });
 
