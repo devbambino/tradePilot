@@ -15,7 +15,8 @@ function log(message) {
 }
 
 function logError(error) {
-    log(`Error: ${message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log(`Error: ${errorMessage}`);
     log(error); // Print stack trace
 }
 

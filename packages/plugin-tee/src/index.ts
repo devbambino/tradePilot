@@ -5,7 +5,8 @@ import { remoteAttestationAction } from "./actions/remoteAttestation";
 
 export { DeriveKeyProvider } from "./providers/deriveKeyProvider";
 export { RemoteAttestationProvider } from "./providers/remoteAttestationProvider";
-export { RemoteAttestationQuote, TEEMode } from "./types/tee";
+export { TEEMode } from "./types/tee";
+export type { RemoteAttestationQuote } from "./types/tee";
 
 export const teePlugin: Plugin = {
     name: "tee",

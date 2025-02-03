@@ -2,14 +2,14 @@ import { type IAgentRuntime, type Plugin, Service, ServiceType } from "@elizaos/
 import { VerifiableLogProvider } from "./providers/verifiableLogProvider.ts";
 import { SQLite3VerifiableDAO } from "./adapters/sqliteVerifiableDAO.ts";
 import {
-    PageQuery,
-    VerifiableAgent,
+    type PageQuery,
+    type VerifiableAgent,
     type VerifiableDAO,
-    VerifiableLog,
-    VerifiableLogQuery,
+    type VerifiableLog,
+    type VerifiableLogQuery,
 } from "./types/logTypes.ts";
 
-export { PageQuery, VerifiableAgent, VerifiableLog, VerifiableLogQuery };
+export type { PageQuery, VerifiableAgent, VerifiableLog, VerifiableLogQuery };
 export { DeriveProvider } from "./providers/dreriveProvider.ts"
 
 export class VerifiableLogService extends Service {

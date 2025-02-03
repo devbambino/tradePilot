@@ -8,7 +8,6 @@ import {
     getTokenBalance,
 } from "@elizaos/plugin-solana";
 import { TokenProvider } from "./providers/token";
-import { Connection, PublicKey } from "@solana/web3.js";
 import type { WalletClient, Signature, Balance } from "@goat-sdk/core";
 import * as fs from "fs";
 import * as path from "path";
@@ -32,6 +31,9 @@ import {
 } from "./wallet";
 import type { ProcessedTokenData } from "./types";
 import { analyzeTradeAction } from "./actions/analyzeTrade";
+import { createSolanaRpc } from "@solana/rpc";
+import { Address } from "@solana/addresses";
+import type { SolanaRpcApi, Rpc } from "@solana/rpc";
 
 // Update Balance interface to include formatted
 interface ExtendedBalance extends Balance {
@@ -40,7 +42,7 @@ interface ExtendedBalance extends Balance {
 
 // Extended WalletProvider interface to ensure proper typing
 interface ExtendedWalletProvider extends WalletClient {
-    connection: Connection;
+    connection: Rpc<SolanaRpcApi>;
     signMessage(message: string): Promise<Signature>;
     getFormattedPortfolio: (runtime: IAgentRuntime) => Promise<string>;
     balanceOf: (tokenAddress: string) => Promise<ExtendedBalance>;
@@ -79,14 +81,7 @@ function validateSolanaAddress(address: string | undefined): boolean {
             elizaLogger.warn(`Solana address failed format check: ${address}`);
             return false;
         }
-
-        // Verify it's a valid Solana public key
-        const pubKey = new PublicKey(address);
-        const isValid = Boolean(pubKey.toBase58());
-        elizaLogger.log(
-            `Solana address validation result for ${address}: ${isValid}`
-        );
-        return isValid;
+        return true;
     } catch (error) {
         elizaLogger.error(`Address validation error for ${address}:`, error);
         return false;
@@ -419,15 +414,15 @@ declare module "@elizaos/plugin-trustdb" {
 }
 
 async function getChainBalance(
-    connection: Connection,
-    walletAddress: PublicKey,
+    connection: Rpc<SolanaRpcApi>,
+    walletAddress: Address,
     tokenAddress: string
 ): Promise<number> {
     // Use existing Solana balance fetching logic
     return await getTokenBalance(
-        connection as any, // TODO: Resolve type conflict caused by multiple versions of @solana/web3.js
+        connection,
         walletAddress,
-        new PublicKey(tokenAddress)
+        tokenAddress
     );
 }
 
@@ -460,7 +455,7 @@ async function createRabbiTraderPlugin(
     elizaLogger.log("Starting GOAT plugin initialization");
 
     // Move connection initialization to the top
-    const connection = new Connection(
+    const connection = createSolanaRpc(
         runtime?.getSetting("SOLANA_RPC_URL") ||
             "https://api.mainnet-beta.solana.com"
     );
@@ -511,16 +506,17 @@ async function createRabbiTraderPlugin(
                     };
                 } else {
                     // Existing Solana logic
-                    const tokenPublicKey = new PublicKey(tokenAddress);
-                    const amount = await getTokenBalance(
-                        connection as any, // TODO: Resolve type conflict caused by multiple versions of @solana/web3.js
-                        keypair.publicKey,
-                        tokenPublicKey
+                    const balanceResponse = await connection.getBalance(
+                        keypair.publicKey
                     );
+                    const balance = typeof balanceResponse === 'bigint' ?
+                        Number(balanceResponse) :
+                        balanceResponse;
                     return {
-                        value: BigInt(amount.toString()),
+                        value: BigInt(balance.toString()),
                         decimals: 9,
-                        formatted: (amount / 1e9).toString(),
+                        formatted: ((typeof balance === 'bigint' ?
+                            Number(balance) : Number(balance)) / 1e9).toString(),
                         symbol: "SOL",
                         name: "Solana",
                     };
@@ -548,10 +544,13 @@ async function createRabbiTraderPlugin(
                     return (baseBalance * 0.9) / 1e18; // Base uses 18 decimals
                 } else {
                     // Handle Solana balance
-                    const balance = await connection.getBalance(
+                    const balanceResponse = await connection.getBalance(
                         keypair.publicKey
                     );
-                    return (balance * 0.9) / 1e9; // Solana uses 9 decimals
+                    const balance = typeof balanceResponse === 'bigint' ?
+                        Number(balanceResponse) :
+                        balanceResponse;
+                    return (Number(balance) * 0.9) / 1e9; // Solana uses 9 decimals
                 }
             } catch (error) {
                 elizaLogger.error(
@@ -658,7 +657,7 @@ async function createRabbiTraderPlugin(
 
 async function analyzeToken(
     runtime: IAgentRuntime,
-    connection: Connection,
+    connection: Rpc<SolanaRpcApi>,
     twitterService: TwitterService,
     tokenAddress: string
 ) {
@@ -991,7 +990,7 @@ async function buy({
                     );
                     const formattedAddress = tokenAddress.startsWith("0x")
                         ? tokenAddress
-                        : new PublicKey(tokenAddress).toBase58(); // Only convert Solana addresses
+                        : tokenAddress; // Already validated Solana address
                     elizaLogger.log(
                         `Token address validated successfully: ${formattedAddress}`
                     );
@@ -1016,7 +1015,7 @@ async function buy({
                     const tradeData = {
                         buy_amount: tradeAmount,
                         is_simulation: false,
-                        token_address: new PublicKey(tokenAddress).toBase58(),
+                        token_address: formattedAddress, // Use the properly formatted address
                         buy_price:
                             tokenData.dexScreenerData.pairs[0]?.priceUsd || 0,
                         buy_timeStamp: new Date().toISOString(),

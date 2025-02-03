@@ -1,7 +1,8 @@
-import { Plugin } from "@elizaos/core";
-import { generateMemeAction, generateMemeActionHandler, Meme } from "./actions";
+import { type Plugin } from "@elizaos/core";
+import { generateMemeAction, generateMemeActionHandler, type Meme } from "./actions";
 
-export { generateMemeAction, generateMemeActionHandler, Meme };
+export { generateMemeAction, generateMemeActionHandler };
+export type { Meme };
 
 export const imgflipPlugin: Plugin = {
     name: "imgflip",

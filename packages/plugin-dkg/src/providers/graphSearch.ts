@@ -15,7 +15,7 @@ import {
     generalSparqlQuery,
 } from "../constants.ts";
 // @ts-ignore
-import DKG from "dkg.js";
+import { DKG } from 'dkg.js';
 import { DKGSelectQuerySchema, isDKGSelectQuery, type DKGQueryResultEntry } from "../types.ts";
 
 // Provider configuration
@@ -97,7 +97,7 @@ async function constructSparqlQuery(
 }
 
 export class DKGProvider {
-    private client: typeof DKG;
+    private client: DKG;
     constructor(config: DKGClientConfig) {
         this.validateConfig(config);
     }

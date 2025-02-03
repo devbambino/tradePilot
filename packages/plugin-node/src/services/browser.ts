@@ -257,7 +257,7 @@ export class BrowserService extends Service implements IBrowserService {
         try {
             const hcaptchaKey = await this.getHCaptchaWebsiteKey(page);
             if (hcaptchaKey) {
-                const solution = await this.captchaSolver.hcaptchaProxyless({
+                const solution = await this.captchaSolver.hcaptchaproxyless({
                     websiteURL: url,
                     websiteKey: hcaptchaKey,
                 });
@@ -271,7 +271,7 @@ export class BrowserService extends Service implements IBrowserService {
 
             const recaptchaKey = await this.getReCaptchaWebsiteKey(page);
             if (recaptchaKey) {
-                const solution = await this.captchaSolver.recaptchaV2Proxyless({
+                const solution = await this.captchaSolver.recaptchav2proxyless({
                     websiteURL: url,
                     websiteKey: recaptchaKey,
                 });

@@ -12,7 +12,7 @@ export class TeeLogService extends Service implements ITeeLogService {
     private initialized = false;
     private enableTeeLog = false;
     private teeType: TeeType;
-    private teeMode: TEEMode = TEEMode.OFF; // Only used for plugin-tee with TDX dstack
+    private teeMode: TEEMode.OFF;
 
     private teeLogDAO: TeeLogDAO;
     private teeLogManager: TeeLogManager;
@@ -44,10 +44,10 @@ export class TeeLogService extends Service implements ITeeLogService {
         }
 
         const runInSgx = runtime.getSetting("SGX");
-        const teeMode = runtime.getSetting("TEE_MODE");
+        const teeMode = runtime.getSetting("TEE_MODE") as TEEMode;
         const walletSecretSalt = runtime.getSetting("WALLET_SECRET_SALT");
 
-        this.teeMode = teeMode ? TEEMode[teeMode as keyof typeof TEEMode] : TEEMode.OFF;
+        this.teeMode = (teeMode as TEEMode.OFF) || TEEMode.OFF;
 
         const useSgxGramine = runInSgx && enableValues.includes(runInSgx.toLowerCase());
         const useTdxDstack = teeMode && teeMode !== TEEMode.OFF && walletSecretSalt;

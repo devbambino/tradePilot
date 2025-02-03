@@ -15,12 +15,11 @@ import {
 import { DKG_EXPLORER_LINKS } from "../constants.ts";
 import { createDKGMemoryTemplate } from "../templates.ts";
 // @ts-ignore
-import DKG from "dkg.js";
+import { DKG } from "dkg.js";
 import { DKGMemorySchema, isDKGMemoryContent } from "../types.ts";
 
 // Define a basic type for the DKG client
-type DKGClient = typeof DKG | null;
-let DkgClient: DKGClient = null;
+let dkgClient: DKG | null = null;
 
 export const dkgInsert: Action = {
     name: "INSERT_MEMORY_ACTION",
@@ -57,7 +56,7 @@ export const dkgInsert: Action = {
         _options: { [key: string]: unknown },
         callback: HandlerCallback
     ): Promise<boolean> => {
-        DkgClient = new DKG({
+        dkgClient = new DKG({
             environment: runtime.getSetting("DKG_ENVIRONMENT"),
             endpoint: runtime.getSetting("DKG_HOSTNAME"),
             port: runtime.getSetting("DKG_PORT"),
@@ -71,6 +70,10 @@ export const dkgInsert: Action = {
             contentType: "all",
             nodeApiVersion: "/v1",
         });
+
+        if (!dkgClient) {
+            throw new Error("DKG client not initialized");
+        }
 
         const currentPost = String(state.currentPost);
         elizaLogger.log("currentPost");
@@ -122,7 +125,7 @@ export const dkgInsert: Action = {
         try {
             elizaLogger.log("Publishing message to DKG");
 
-            createAssetResult = await DkgClient.asset.create(
+            createAssetResult = await dkgClient.asset.create(
                 {
                     public: memoryKnowledgeGraph.object,
                 },
