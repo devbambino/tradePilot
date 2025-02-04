@@ -489,7 +489,7 @@ export async function getClaimReferences(
         return createErrorResponse("getClaimReferencesError", err);
     }
 }
-// All these fucntions from here on out broadcasts messages to the chain.
+// All these functions from here on out broadcasts messages to the chain.
 export async function subscribeLaunchpad(
     this: InjectiveGrpcBase,
     params: MitoTypes.GetLaunchpadSubscribeParams

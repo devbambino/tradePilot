@@ -11,7 +11,7 @@ import {
     composeContext,
     generateObject,
 } from "@elizaos/core";
-import { validateCronosZkevmConfig } from "../enviroment";
+import { validateCronosZkevmConfig } from "../environment";
 
 import {
     type Address,

@@ -1,6 +1,6 @@
 import { IAgentRuntime, Client, elizaLogger } from "@elizaos/core";
 import { DevaClient } from "./devaClient.ts";
-import { validateDevaConfig } from "./enviroment.ts";
+import { validateDevaConfig } from "./environment.ts";
 
 export const DevaClientInterface: Client = {
     async start(runtime: IAgentRuntime) {
