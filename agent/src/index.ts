@@ -138,6 +138,7 @@ import { holdstationPlugin } from "@elizaos/plugin-holdstation";
 import { nvidiaNimPlugin } from "@elizaos/plugin-nvidia-nim";
 import { zxPlugin } from "@elizaos/plugin-0x";
 import { hyperbolicPlugin } from "@elizaos/plugin-hyperbolic";
+import { orderlyPlugin } from "@elizaos/plugin-orderly";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -1069,8 +1070,8 @@ export async function createAgent(
                 getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
-            (getSecret(character, "EVM_PRIVATE_KEY") ||
-                getSecret(character, "SOLANA_PRIVATE_KEY"))
+            getSecret(character, "EVM_PRIVATE_KEY") ||
+            getSecret(character, "SOLANA_PRIVATE_KEY")
                 ? edwinPlugin
                 : null,
             (getSecret(character, "EVM_PUBLIC_KEY") ||
@@ -1304,6 +1305,13 @@ export async function createAgent(
             getSecret(character, "DESK_EXCHANGE_PRIVATE_KEY") ||
             getSecret(character, "DESK_EXCHANGE_NETWORK")
                 ? deskExchangePlugin
+                : null,
+            getSecret(character, "EVM_PRIVATE_KEY") &&
+            getSecret(character, "EVM_PRIVATE_KEY")?.startsWith("0x") &&
+            getSecret(character, "ORDERLY_PRIVATE_KEY") &&
+            getSecret(character, "ORDERLY_NETWORK") &&
+            getSecret(character, "ORDERLY_BROKER_ID")
+                ? orderlyPlugin
                 : null,
         ]
             .flat()
