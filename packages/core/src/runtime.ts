@@ -370,10 +370,10 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.imageModelProvider =
             this.character.imageModelProvider ?? this.modelProvider;
-        
+
         this.imageVisionModelProvider =
             this.character.imageVisionModelProvider ?? this.modelProvider;
-            
+
         elizaLogger.info(
           `${this.character.name}(${this.agentId}) - Selected model provider:`,
           this.modelProvider
@@ -1168,7 +1168,10 @@ export class AgentRuntime implements IAgentRuntime {
                 name: name || this.character.name || "Unknown User",
                 username: userName || this.character.username || "Unknown",
                 email: email || this.character.email || userId, // Temporary
-                details: this.character || { summary: "" },
+                details: Object.assign({}, this.character, {
+                    source,
+                    plugins: this.character?.plugins?.map((plugin) => plugin.name),
+                }),
             });
             elizaLogger.success(`User ${userName} created successfully.`);
         }
