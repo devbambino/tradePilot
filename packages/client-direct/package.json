@@ -42,6 +42,7 @@
 		"dev": "tsup --format esm --dts --watch"
 	},
 	"peerDependencies": {
-		"whatwg-url": "7.1.0"
+		"whatwg-url": "7.1.0",
+		"zod": "3.23.8"
 	}
 }

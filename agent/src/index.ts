@@ -160,6 +160,7 @@ import { quickIntelPlugin } from "@elizaos/plugin-quick-intel";
 
 import { trikonPlugin } from "@elizaos/plugin-trikon";
 import arbitragePlugin from "@elizaos/plugin-arbitrage";
+import { btcfunPlugin } from "@elizaos/plugin-btcfun";
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
@@ -497,26 +498,24 @@ async function handlePluginImporting(plugins: string[]) {
                 try {
                     const importedPlugin = await import(plugin);
                     const functionName =
-                        plugin
+                        `${plugin
                             .replace("@elizaos/plugin-", "")
-                            .replace(/-./g, (x) => x[1].toUpperCase()) +
-                        "Plugin"; // Assumes plugin function is camelCased with Plugin suffix
+                            .replace(/-./g, (x) => x[1].toUpperCase())}Plugin`; // Assumes plugin function is camelCased with Plugin suffix
                     return (
                         importedPlugin.default || importedPlugin[functionName]
                     );
-                } catch (importError) {
+                } catch (_importError) {
                     elizaLogger.error(
                         `Failed to import plugin: ${plugin}`,
-                        importError
+                        _importError
                     );
                     return []; // Return null for failed imports
                 }
             })
         );
         return importedPlugins;
-    } else {
-        return [];
     }
+        return [];
 }
 
 export function getTokenForProvider(
@@ -1304,6 +1303,9 @@ export async function createAgent(
             getSecret(character, "DESK_EXCHANGE_PRIVATE_KEY") ||
             getSecret(character, "DESK_EXCHANGE_NETWORK")
                 ? deskExchangePlugin
+                : null,
+            getSecret(character, "BTC_PRIVATE_KEY_WIF")
+                ? btcfunPlugin
                 : null,
         ]
             .flat()
