@@ -4,7 +4,7 @@ import pinataSDK from "@pinata/sdk";
 import { readdirSync } from "fs";
 import { writeFile, readFile } from "fs/promises";
 import path from "path";
-import { MintParams } from "./NFTCollection";
+
 export const sleep = async (ms: number) => {
     await new Promise((resolve) => setTimeout(resolve, ms));
 };
