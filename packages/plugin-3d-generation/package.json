@@ -24,7 +24,7 @@
 		"whatwg-url": "7.1.0"
 	},
 	"devDependencies": {
-		"vitest": "^2.1.5"
+		"vitest": "^3.0.0"
 	},
 	"scripts": {
 		"build": "tsup --format esm --dts",
