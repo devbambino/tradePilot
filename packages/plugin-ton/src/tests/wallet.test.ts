@@ -34,13 +34,13 @@ vi.mock("path", async () => {
 });
 
 // Mock the ICacheManager
-const mockCacheManager = {
+export const mockCacheManager = {
     get: vi.fn().mockResolvedValue(null),
     set: vi.fn(),
     delete: vi.fn(),
 };
 
-const testnet = "https://testnet.toncenter.com/api/v2/jsonRPC";
+export const testnet = "https://testnet.toncenter.com/api/v2/jsonRPC";
 
 describe("Wallet provider", () => {
     let walletProvider: WalletProvider;
