@@ -67,8 +67,8 @@ export function bufferToChunks(buff: Buffer, chunkSize: number) {
   
   export async function uploadFolderToIPFS(folderPath: string): Promise<string> {
   const pinata = new pinataSDK({
-    pinataApiKey: process.env.PINATA_API_KEY,
-    pinataSecretApiKey: process.env.PINATA_API_SECRET,
+    pinataApiKey: process.env.TON_PINATA_API_KEY,
+    pinataSecretApiKey: process.env.TON_PINATA_API_SECRET,
   });
 
   const response = await pinata.pinFromFS(folderPath);
@@ -94,8 +94,8 @@ export async function updateMetadataFiles(metadataFolderPath: string, imagesIpfs
 
 export async function uploadJSONToIPFS(json: any): Promise<string> {
   const pinata = new pinataSDK({
-    pinataApiKey: process.env.PINATA_API_KEY,
-    pinataSecretApiKey: process.env.PINATA_API_SECRET,
+    pinataApiKey: process.env.TON_PINATA_API_KEY,
+    pinataSecretApiKey: process.env.TON_PINATA_API_SECRET,
   });
 
   const response = await pinata.pinJSONToIPFS(json);
