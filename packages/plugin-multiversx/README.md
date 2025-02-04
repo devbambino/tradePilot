@@ -2,43 +2,84 @@
 
 MultiversX blockchain integration plugin for Eliza OS that enables token management and transfers.
 
+This plugin is under development and will soon include additional features and improvements.
+
 ## Overview
 
-This plugin aims to be the basis of all interactions with the MultiversX ecosystem.
+This plugin serves as the foundation for interacting with the MultiversX ecosystem, enabling secure and efficient blockchain transactions and token management within Eliza OS.
 
-## Features
+### Features
 
-- EGLD and ESDT token transfers
-- Token creation and management
 - Multiple network support (mainnet, devnet, testnet)
 - Secure transaction signing
 - Automatic nonce management
-- Transaction status tracking
-- Built-in denomination handling
-- Comprehensive error handling
 
-## Adding a new action
+### Actions
+- EGLD and ESDT token transfers
+- ESDT creation and management 
+- ESDT Swap
+- Token Swap
 
-Reuse providers and utilities from the existing actions where possible. Add more utilities if you think they will be useful for other actions.
 
-1. Add the action to the `actions` directory. Try to follow the naming convention of the other actions.
-2. Export the action in the `index.ts` file.
+## User Guide
 
-## Installation
+### Installation
+
+To install the plugin, run:
 
 ```bash
 pnpm install @elizaos/plugin-multiversx
 ```
 
-## Configuration
+### ElizaOs .env Configuration
 
-The plugin requires environment variables or runtime settings:
+Before using the plugin, configure the necessary environment variables in the **.env** file at the ElizaOS level:
 
-```env
+```.env
 MVX_PRIVATE_KEY=your-wallet-private-key
 MVX_NETWORK=devnet  # mainnet, devnet, or testnet
-ACCESS_TOKEN_MANAGEMENT_TO=everyone  # you can put an userid to limit token managament to one user only (use same id as in the database)
+ACCESS_TOKEN_MANAGEMENT_TO=everyone  # you can put an userid to limit token management to one user only (use same id as in the database)
 ```
+
+#### Private Key
+
+The `MVX_PRIVATE_KEY` variable needs to be generated using `mxpy wallet convert` as it requires a specific hex format.
+
+You will need at least `mxpy` version **9.11.0** installed on your machine, as this feature was added in [release 9.11.0](https://github.com/multiversx/mx-sdk-py-cli/releases/tag/v9.11.0).
+
+Refer to the [documentation](https://docs.multiversx.com/sdk-and-tools/sdk-py/installing-mxpy) for installation or updating to a specific version.
+
+##### Example:
+
+```shell
+# Check available options for the convert command
+~$ mxpy wallet convert -h
+
+# Convert a PEM file into a hex secret key:
+~$ mxpy wallet convert --infile wallet.pem --in-format pem --out-format secret-key
+Output:
+
+po8ed118werc69c9be506df87f76d6e919f61d3559ed8g68bb78b39fcddc8t9y
+```
+
+#### Environment
+
+The plugin supports the following networks:
+
+- Mainnet: `mainnet`
+- Devnet: `devnet`
+- Testnet: `testnet`
+
+### Trigger Agent actions in chat bot
+
+#### Create New ESDT
+ ```
+ Can you create a token on multiversx called MULTIVERS with a ticker MUL, an amount of 10000 and 18 decimals?
+ ```
+#### Transfer EGLD
+ ```
+ Can you transfer 10 EGLD to erd1tjygwhw5ylmv3v52ucvhmz0q7r0hafz4cfndjaskss5ahz28l3hqdvxqct ?
+ ```
 
 ## Usage
 
@@ -108,107 +149,56 @@ const result = await eliza.execute({
     },
 });
 ```
+## Contributor Guide
 
-## Troubleshooting
+There are multiple contributors within the ecosystem working on the MultiversX ElizaOS plugin. It is recommended to check the [Telegram group](https://t.me/MultiversXDevelopers) to see if someone is already working on a similar feature before starting your contribution.
 
-### Common Issues
+The MultiversX plugin is part of the ElizaOS project, and all contributions must adhere to its guidelines.
+Please refer to the root [CONTRIBUTING.md](../../CONTRIBUTING.md) file for details on how to contribute.
 
-1. **Transaction Failures**
+### Setting Up a Development Environment
 
-    - Verify wallet has sufficient balance
-    - Check network configuration matches intended network
-    - Ensure correct token identifiers
-    - Verify recipient address format
+To develop the plugin, open a terminal in the project folder. When making modifications, rebuild the plugin to test it with your local agent:
 
-2. **Configuration Problems**
+```bash
+pnpm build
+```
 
-    - Validate private key format
-    - Check network selection is valid
-    - Ensure environment variables are properly set
-    - Verify wallet permissions for token operations
-
-3. **Token Creation Issues**
-
-    - Check token name and ticker format
-    - Verify EGLD balance for issuance fee
-    - Ensure unique token identifiers
-    - Monitor transaction status
-
-4. **Network Connectivity**
-    - Verify network endpoint availability
-    - Check API rate limits
-    - Monitor network status
-    - Ensure proper network selection
-
-## Security Best Practices
-
-1. **Key Management**
-
-    - Never expose private keys in code
-    - Use environment variables for sensitive data
-    - Implement key rotation policies
-    - Monitor wallet activity
-
-2. **Transaction Safety**
-
-    - Validate all transaction parameters
-    - Implement transaction limits
-    - Use proper denomination handling
-    - Double-check recipient addresses
-
-3. **Network Security**
-
-    - Use secure network connections
-    - Implement retry mechanisms
-    - Monitor for suspicious activity
-    - Keep dependencies updated
-
-4. **Error Handling**
-    - Implement comprehensive error logging
-    - Handle network timeouts gracefully
-    - Validate all user inputs
-    - Provide clear error messages
-
-## Testing
-
-Run the test suite:
+To run all tests:
 
 ```bash
 pnpm test
 ```
 
-Watch mode for development:
+For watch mode during development, where tests run automatically upon saving changes:
 
 ```bash
 pnpm test:watch
 ```
 
-## Dependencies
+### Adding a New Action
 
-- @multiversx/sdk-core: ^13.15.0
-- bignumber.js: ^9.1.2
-- tsup: ^8.3.5
-- vitest: ^2.1.5
+When adding a new action, reuse providers and utilities from existing actions where possible. If necessary, add more utilities that benefit other actions.
 
-## Contributing
+1. Add the action to the `src/actions` directory, following the existing coding style.
+2. Export the action in the `src/index.ts` file.
 
-Contributions are welcome! Please see the [CONTRIBUTING.md](../../CONTRIBUTING.md) file for more information.
+---
 
-## Credits
+## Credits & Additional Resources
 
-This plugin integrates with the [MultiversX blockchain](https://multiversx.com/) using their official SDK.
+This plugin integrates with the [MultiversX blockchain](https://multiversx.com/) using its official SDK.
 
 Special thanks to:
-
-- The MultiversX team for developing the MultiversX blockchain
+- The MultiversX team for developing the MultiversX blockchain.
 - The Eliza community for their contributions and feedback.
 
 For more information about MultiversX blockchain capabilities:
-
 - [MultiversX Documentation](https://docs.multiversx.com/)
 - [MultiversX Developer Portal](https://docs.multiversx.com/developers/getting-started/introduction)
 - [MultiversX GitHub Repository](https://github.com/multiversx/mx-sdk-js)
 
 ## License
 
-This plugin is part of the Eliza project. See the main project repository for license information.
+This plugin is part of the Eliza project. See the main project repository's [LICENSE](../../LICENSE) file for license information.
+
