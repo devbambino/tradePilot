@@ -160,6 +160,8 @@ import { quickIntelPlugin } from "@elizaos/plugin-quick-intel";
 
 import { trikonPlugin } from "@elizaos/plugin-trikon";
 import arbitragePlugin from "@elizaos/plugin-arbitrage";
+import { cookiefunPlugin } from "@elizaos/plugin-cookiefun";
+
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
@@ -1305,6 +1307,7 @@ export async function createAgent(
             getSecret(character, "DESK_EXCHANGE_NETWORK")
                 ? deskExchangePlugin
                 : null,
+            getSecret(character, "COOKIE_FUN_API_KEY") ? cookiefunPlugin : null,
         ]
             .flat()
             .filter(Boolean),
