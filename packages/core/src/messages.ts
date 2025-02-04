@@ -65,6 +65,7 @@ export const formatMessages = ({
     actors: Actor[];
 }) => {
     const messageStrings = messages
+        .slice()  // copy the array and don't mutate the original
         .reverse()
         .filter((message: Memory) => message.userId)
         .map((message: Memory) => {
