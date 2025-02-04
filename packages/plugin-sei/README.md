@@ -6,6 +6,7 @@ Sei Network plugin for Eliza OS that enables Eliza agents to perform actions on 
 This plugin provides functionality to:
 
 - Transfer SEI tokens to other `0x` or `sei` addresses
+- Stake SEI tokens on a specified validator.
 - Query wallet balances
 
 ## Installation
@@ -64,11 +65,21 @@ User: "What's my wallet balance?";
 Assistant: "Your wallet contains 10.5 SEI ($5.25 USD)...";
 ```
 
+## Stake SEI
+
+Stake tokens on a specified validator:
+```typescript
+// Example conversation
+User: "Please stake 10.1 SEI on the validator seivaloper17mwrc289lhdupvjr097ynxsv9wvxhtqw4cwvv5";
+Assistant: "I will now proceed to stake 10.1 SEI on the validator seivaloper17mwrc289lhdupvjr097ynxsv9wvxhtqw4cwvv5.";
+```
+
 ## API Reference
 
 ### Actions
 
 - `SEND_TOKEN`: Transfer SEI to a specified address
+- `STAKE_TOKEN`: Stakes SEI on a specified validator
 
 ### Providers
 

@@ -12,7 +12,8 @@ import {
 } from "@elizaos/core";
 
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
-import { ADDRESS_PRECOMPILE_ABI, ADDRESS_PRECOMPILE_ADDRESS, type Transaction, type TransferParams } from "../types";
+import { type Transaction, type TransferParams } from "../types";
+import { ADDRESS_PRECOMPILE_ADDRESS, ADDRESS_PRECOMPILE_ABI } from "@sei-js/evm"
 
 export const transferTemplate = `You are an AI assistant specialized in processing cryptocurrency transfer requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -103,34 +104,8 @@ export class TransferAction {
                 to: recipientAddress,
                 value: parseEther(params.amount),
                 data: params.data as Hex,
-
-                kzg: {
-                    blobToKzgCommitment: (_: ByteArray): ByteArray => {
-                        throw new Error("Function not implemented.");
-                    },
-                    computeBlobKzgProof: (
-                        _blob: ByteArray,
-                        _commitment: ByteArray
-                    ): ByteArray => {
-                        throw new Error("Function not implemented.");
-                    },
-                },
-                maxFeePerBlobGas: BigInt(0), // Add required property
-                blobs: [], // Add required property
                 chain: undefined,
             });
-                // kzg: {
-                //     blobToKzgCommitment: function (_: ByteArray): ByteArray {
-                //         throw new Error("Function not implemented.");
-                //     },
-                //     computeBlobKzgProof: function (
-                //         _blob: ByteArray,
-                //         _commitment: ByteArray
-                //     ): ByteArray {
-                //         throw new Error("Function not implemented.");
-                //     },
-                // },
-
 
             return {
                 hash,
@@ -195,13 +170,6 @@ export const transferAction: Action = {
             runtime,
             walletProvider
         );
-        
-        // // Compose transfer context
-        // const paramOptions = await buildTransferDetails(
-        //     state,
-        //     runtime,
-        //     walletProvider
-        // );
 
         try {
             const transferResp = await action.transfer(paramOptions);

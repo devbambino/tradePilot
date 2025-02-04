@@ -4305,6 +4305,9 @@ importers:
       '@elizaos/core':
         specifier: workspace:*
         version: link:../core
+      '@sei-js/evm':
+        specifier: 2.0.0
+        version: 2.0.0(ethers@6.13.5(bufferutil@4.0.9)(utf-8-validate@6.0.5))(viem@2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1))
       form-data:
         specifier: 4.0.1
         version: 4.0.1
@@ -12044,6 +12047,12 @@ packages:
   '@sei-js/core@3.2.1':
     resolution: {integrity: sha512-8pZBYvFhpeUNDH/4WonJNV4yADW7Bqq4RySw8JIsVBC3IBkW53ysKpqf6O0TKOswW6T8E3p39txtajViHYMixw==}
     deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
+  '@sei-js/evm@2.0.0':
+    resolution: {integrity: sha512-dOR/yZVd6TxJ+WIGrJT8zvHN9iOcfz0moSM1dt5YsgZj4JGdKZeuL+r1gzINIkj1diZmtuXxL4oCLsWB+ap+2g==}
+    peerDependencies:
+      ethers: ^6.0.0
+      viem: 2.21.58
 
   '@sei-js/proto@3.1.0':
     resolution: {integrity: sha512-TollbfB77pIppO9JOjja/Oo0+n4yOXa0H9yD5SwPPFIrx7Xp5YYrvpVYmZYwf5i0t/ulY8wxbqKfw0sl0geSPw==}
@@ -42929,6 +42938,11 @@ snapshots:
       - bufferutil
       - debug
       - utf-8-validate
+
+  '@sei-js/evm@2.0.0(ethers@6.13.5(bufferutil@4.0.9)(utf-8-validate@6.0.5))(viem@2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1))':
+    dependencies:
+      ethers: 6.13.5(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      viem: 2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1)
 
   '@sei-js/proto@3.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:

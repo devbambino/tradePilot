@@ -73,3 +73,9 @@ export interface ProviderError extends Error {
     code?: number;
     data?: unknown;
 }
+
+// Action parameters
+export interface StakeParams {
+    validatorAddress: string;
+    amount: string;
+}
